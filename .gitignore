@@ -7,3 +7,85 @@ playwright-report/
 test-results/
 *.log
 .DS_Store
+# =========================
+# Node.js
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# =========================
+# Build / Output
+# =========================
+dist/
+build/
+out/
+
+# =========================
+# Playwright
+# =========================
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+videos/
+screenshots/
+traces/
+
+# Optional (if using default folders)
+**/test-results/
+**/playwright-report/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# Coverage
+# =========================
+coverage/
+
+# =========================
+# Temporary files
+# =========================
+.tmp/
+.temp/
+.cache/
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+
+# =========================
+# Misc
+# =========================
+*.local
+*.tsbuildinfo
+/.venv/

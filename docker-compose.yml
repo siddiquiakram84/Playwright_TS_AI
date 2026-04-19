@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: playwright-ts-ai:latest
+    container_name: playwright-runner
+    environment:
+      - ENV=${ENV:-test}
+      - UI_BASE_URL=${UI_BASE_URL:-https://automationexercise.com}
+      - API_BASE_URL=${API_BASE_URL:-https://fakestoreapi.com}
+      - TEST_USER_EMAIL=${TEST_USER_EMAIL:-test@example.com}
+      - TEST_USER_PASSWORD=${TEST_USER_PASSWORD:-Test@1234}
+      - DEFAULT_TIMEOUT=${DEFAULT_TIMEOUT:-30000}
+      - API_TIMEOUT=${API_TIMEOUT:-15000}
+      - ALLURE_RESULTS_DIR=allure-results
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./playwright-report:/app/playwright-report
+      - ./test-results:/app/test-results
+      - ./logs:/app/logs
+    command: npx playwright test
+
+  playwright-ui:
+    extends:
+      service: playwright
+    container_name: playwright-ui-runner
+    command: npx playwright test --project=ui
+
+  playwright-api:
+    extends:
+      service: playwright
+    container_name: playwright-api-runner
+    command: npx playwright test --project=api
+
+  playwright-hybrid:
+    extends:
+      service: playwright
+    container_name: playwright-hybrid-runner
+    command: npx playwright test --project=hybrid
+
+  allure:
+    image: frankescobar/allure-docker-service:latest
+    container_name: allure-server
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 5
+      KEEP_HISTORY: 1
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./allure-report:/app/default-reports
