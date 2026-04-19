@@ -1,0 +1,13 @@
+[
+  {
+    "total": 22,
+    "passed": 16,
+    "failed": 6,
+    "skipped": 0,
+    "flaky": 0,
+    "passRate": 72.7,
+    "duration": 84503.53,
+    "startTime": "2026-04-19T19:52:02.087Z",
+    "recordedAt": "2026-04-19T19:53:49.483Z"
+  }
+]

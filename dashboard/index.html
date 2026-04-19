@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>◈ JARVIS — Playwright Intelligence System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ─── Variables ────────────────────────────────────────────────────── */
+:root {
+  --bg:       #020c18;
+  --bg2:      #040f1f;
+  --bg3:      #071525;
+  --cyan:     #00d4ff;
+  --cyan2:    #0088cc;
+  --cyan3:    #005580;
+  --orange:   #ff6b35;
+  --gold:     #ffaa00;
+  --green:    #00ff88;
+  --red:      #ff3355;
+  --blue:     #4488ff;
+  --text:     #c0e8ff;
+  --dim:      #4a7a99;
+  --border:   rgba(0,212,255,0.25);
+  --glow:     0 0 20px rgba(0,212,255,0.4);
+  --glow-sm:  0 0 8px rgba(0,212,255,0.5);
+  --font:     'Orbitron', sans-serif;
+  --mono:     'Share Tech Mono', monospace;
+}
+
+/* ─── Reset ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: default;
+  user-select: none;
+}
+
+/* ─── Background Layers ────────────────────────────────────────────── */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.hex-grid {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 0 L56 15 L56 45 L28 60 L0 45 L0 15 Z' fill='none' stroke='%2300d4ff' stroke-width='0.7'/%3E%3Cpath d='M28 60 L56 75 L56 100' fill='none' stroke='%2300d4ff' stroke-width='0.7'/%3E%3Cpath d='M28 60 L0 75 L0 100' fill='none' stroke='%2300d4ff' stroke-width='0.7'/%3E%3C/svg%3E");
+  background-size: 56px 100px;
+  pointer-events: none;
+}
+
+.scan-line {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  z-index: 2;
+  opacity: 0.5;
+  animation: scanDown 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanDown {
+  0%   { top: 0%; opacity: 0; }
+  5%   { opacity: 0.5; }
+  95%  { opacity: 0.5; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ─── HUD Container ────────────────────────────────────────────────── */
+#hud {
+  position: relative;
+  z-index: 10;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 44px 52px 1fr 90px 140px;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+/* ─── Header ───────────────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(0,212,255,0.04);
+  backdrop-filter: blur(4px);
+  position: relative;
+  overflow: hidden;
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.03), transparent);
+  animation: headerShimmer 4s ease-in-out infinite;
+}
+
+@keyframes headerShimmer { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
+
+.logo {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--cyan);
+  text-shadow: var(--glow-sm);
+  letter-spacing: 3px;
+}
+
+.logo span { color: var(--orange); }
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--green);
+}
+
+.live-dot {
+  width: 7px; height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--green);
+  animation: livePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes livePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+.env-badge {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  border: 1px solid rgba(255,170,0,0.4);
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+#clock {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--cyan);
+  text-shadow: var(--glow-sm);
+  letter-spacing: 2px;
+  min-width: 180px;
+  text-align: right;
+}
+
+/* ─── Stats Bar ────────────────────────────────────────────────────── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(0,212,255,0.03);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 0 0 3px 3px;
+}
+
+.stat-card[data-type="total"]::after   { background: var(--cyan); }
+.stat-card[data-type="passed"]::after  { background: var(--green); }
+.stat-card[data-type="failed"]::after  { background: var(--red); }
+.stat-card[data-type="skipped"]::after { background: var(--dim); }
+.stat-card[data-type="rate"]::after    { background: var(--orange); }
+.stat-card[data-type="duration"]::after{ background: var(--gold); }
+
+.stat-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  transition: all 0.5s ease;
+}
+
+.stat-card[data-type="total"] .stat-value   { color: var(--cyan); text-shadow: 0 0 12px rgba(0,212,255,0.6); }
+.stat-card[data-type="passed"] .stat-value  { color: var(--green); text-shadow: 0 0 12px rgba(0,255,136,0.6); }
+.stat-card[data-type="failed"] .stat-value  { color: var(--red); text-shadow: 0 0 12px rgba(255,51,85,0.6); }
+.stat-card[data-type="skipped"] .stat-value { color: var(--dim); }
+.stat-card[data-type="rate"] .stat-value    { color: var(--orange); text-shadow: 0 0 12px rgba(255,107,53,0.6); }
+.stat-card[data-type="duration"] .stat-value{ color: var(--gold); font-size: 16px; }
+
+/* ─── Main Content Grid ────────────────────────────────────────────── */
+.main-content {
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* ─── Panels ───────────────────────────────────────────────────────── */
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(0,212,255,0.025);
+  padding: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.panel-title {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--cyan2);
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.panel-title::before { content: '◈'; color: var(--cyan); }
+
+/* Corner decorations */
+.panel::before, .panel::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--cyan);
+  border-style: solid;
+  opacity: 0.6;
+}
+
+.panel::before { top: 2px; left: 2px; border-width: 2px 0 0 2px; }
+.panel::after  { bottom: 2px; right: 2px; border-width: 0 2px 2px 0; }
+
+/* ─── Left Panel ───────────────────────────────────────────────────── */
+.left-panel { display: flex; flex-direction: column; gap: 8px; }
+
+.project-bar-item { margin-bottom: 6px; }
+
+.project-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+}
+
+.project-bar-label span:first-child { color: var(--text); }
+.project-bar-label span:last-child  { color: var(--cyan); }
+
+.project-bar-track {
+  height: 4px;
+  background: rgba(0,212,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.project-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease;
+  position: relative;
+}
+
+.project-bar-fill.ui      { background: linear-gradient(90deg, var(--cyan), var(--blue)); }
+.project-bar-fill.api     { background: linear-gradient(90deg, var(--green), var(--cyan2)); }
+.project-bar-fill.hybrid  { background: linear-gradient(90deg, var(--orange), var(--gold)); }
+
+.project-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 2px;
+  animation: barGlow 2s ease-in-out infinite;
+}
+
+@keyframes barGlow { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+.suite-list { font-family: var(--mono); font-size: 9px; overflow: auto; flex: 1; }
+
+.suite-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 4px;
+  border-bottom: 1px solid rgba(0,212,255,0.06);
+  gap: 6px;
+}
+
+.suite-item:hover { background: rgba(0,212,255,0.06); }
+
+.suite-name { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.badge {
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+.badge.pass  { background: rgba(0,255,136,0.2); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+.badge.fail  { background: rgba(255,51,85,0.2);  color: var(--red);   border: 1px solid rgba(255,51,85,0.3); }
+.badge.skip  { background: rgba(74,122,153,0.2); color: var(--dim);   border: 1px solid rgba(74,122,153,0.3); }
+
+/* ─── Center Panel — Arc Reactor ───────────────────────────────────── */
+.center-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+}
+
+#arc-reactor {
+  display: block;
+  filter: drop-shadow(0 0 20px rgba(0,212,255,0.5));
+}
+
+.reactor-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-align: center;
+}
+
+/* ─── Right Panel ──────────────────────────────────────────────────── */
+.right-panel { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+
+.failure-item {
+  padding: 4px 6px;
+  background: rgba(255,51,85,0.06);
+  border-left: 2px solid var(--red);
+  border-radius: 0 2px 2px 0;
+  font-family: var(--mono);
+  font-size: 9px;
+  animation: fadeSlideIn 0.4s ease;
+}
+
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+.failure-title { color: var(--red); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.failure-meta  { color: var(--dim); font-size: 8px; display: flex; gap: 8px; }
+
+.slow-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 4px;
+  border-bottom: 1px solid rgba(0,212,255,0.06);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.slow-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.slow-dur  { color: var(--gold); min-width: 50px; text-align: right; }
+
+/* ─── EKG Bar ──────────────────────────────────────────────────────── */
+.ekg-section {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(0,212,255,0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.ekg-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  min-width: 60px;
+}
+
+#ekg-canvas { flex: 1; height: 80px; }
+
+.ekg-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.ekg-stat { display: flex; justify-content: space-between; gap: 8px; }
+.ekg-stat span:first-child { color: var(--dim); }
+.ekg-stat span:last-child  { color: var(--cyan); }
+
+/* ─── Bottom Section ───────────────────────────────────────────────── */
+.bottom-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  overflow: hidden;
+}
+
+#trend-canvas { width: 100%; height: 100%; display: block; }
+
+.timeline-list { overflow-y: auto; height: 100%; font-family: var(--mono); font-size: 8px; }
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 120px 1fr 50px 50px;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+  border-bottom: 1px solid rgba(0,212,255,0.05);
+  transition: background 0.15s;
+}
+
+.timeline-item:hover { background: rgba(0,212,255,0.04); }
+
+.tl-status { font-weight: 700; }
+.tl-status.passed  { color: var(--green); }
+.tl-status.failed  { color: var(--red); }
+.tl-status.skipped { color: var(--dim); }
+.tl-name   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.tl-proj   { color: var(--cyan2); text-align: right; font-size: 7px; }
+.tl-dur    { color: var(--gold); text-align: right; }
+
+/* ─── Alert Overlay ────────────────────────────────────────────────── */
+.alert-banner {
+  position: fixed;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: rgba(255,51,85,0.15);
+  border: 1px solid var(--red);
+  border-radius: 3px;
+  padding: 6px 20px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--red);
+  text-shadow: 0 0 8px var(--red);
+  transition: transform 0.4s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.alert-banner.visible { transform: translateX(-50%) translateY(0); }
+
+/* ─── No-data overlay ──────────────────────────────────────────────── */
+.no-data-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2,12,24,0.85);
+  z-index: 50;
+  gap: 16px;
+  font-family: var(--mono);
+}
+
+.no-data-overlay.hidden { display: none; }
+
+.no-data-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  text-shadow: var(--glow);
+}
+
+.no-data-msg { color: var(--dim); font-size: 11px; letter-spacing: 2px; }
+
+/* ─── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--cyan3); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<canvas id="bg-canvas"></canvas>
+<div class="hex-grid"></div>
+<div class="scan-line"></div>
+
+<!-- Alert Banner -->
+<div class="alert-banner" id="alert-banner">⚠ TEST FAILURES DETECTED</div>
+
+<!-- No-data overlay -->
+<div class="no-data-overlay" id="no-data-overlay">
+  <div class="no-data-title">◈ JARVIS ONLINE</div>
+  <div class="no-data-msg">Awaiting test results... run <strong>npm test</strong> first</div>
+</div>
+
+<!-- Main HUD -->
+<div id="hud">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">◈ <span>J</span>ARVIS — PLAYWRIGHT INTELLIGENCE SYSTEM</div>
+    <div class="header-center">
+      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <div class="env-badge" id="env-badge">ENV: TEST</div>
+    </div>
+    <div id="clock">--:--:-- -- --- ----</div>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card" data-type="total">
+      <div class="stat-label">TOTAL TESTS</div>
+      <div class="stat-value" id="s-total">--</div>
+    </div>
+    <div class="stat-card" data-type="passed">
+      <div class="stat-label">PASSED</div>
+      <div class="stat-value" id="s-passed">--</div>
+    </div>
+    <div class="stat-card" data-type="failed">
+      <div class="stat-label">FAILED</div>
+      <div class="stat-value" id="s-failed">--</div>
+    </div>
+    <div class="stat-card" data-type="skipped">
+      <div class="stat-label">SKIPPED</div>
+      <div class="stat-value" id="s-skipped">--</div>
+    </div>
+    <div class="stat-card" data-type="rate">
+      <div class="stat-label">PASS RATE</div>
+      <div class="stat-value" id="s-rate">--%</div>
+    </div>
+    <div class="stat-card" data-type="duration">
+      <div class="stat-label">DURATION</div>
+      <div class="stat-value" id="s-duration">--</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- Left Panel -->
+    <div class="panel left-panel">
+      <div class="panel-title">PROJECT BREAKDOWN</div>
+      <div id="project-bars"></div>
+      <div class="panel-title" style="margin-top:8px">TEST SUITES</div>
+      <div class="suite-list" id="suite-list"></div>
+    </div>
+
+    <!-- Center: Arc Reactor -->
+    <div class="center-panel panel">
+      <canvas id="arc-reactor" width="320" height="280"></canvas>
+      <div class="reactor-label" id="reactor-label">INITIALISING...</div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="panel right-panel">
+      <div class="panel-title">RECENT FAILURES</div>
+      <div id="failures-list"></div>
+      <div class="panel-title" style="margin-top:8px">SLOWEST TESTS</div>
+      <div id="slow-list"></div>
+    </div>
+
+  </div>
+
+  <!-- EKG Heartbeat -->
+  <div class="ekg-section">
+    <div class="ekg-label">♥ HEARTBEAT</div>
+    <canvas id="ekg-canvas"></canvas>
+    <div class="ekg-stats">
+      <div class="ekg-stat"><span>BPM</span><span id="ekg-bpm">--</span></div>
+      <div class="ekg-stat"><span>STATUS</span><span id="ekg-status">--</span></div>
+      <div class="ekg-stat"><span>LAST RUN</span><span id="ekg-last">--</span></div>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom-section">
+    <div class="panel">
+      <div class="panel-title">30-RUN TREND</div>
+      <canvas id="trend-canvas"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">TEST EXECUTION LOG</div>
+      <div class="timeline-list" id="timeline-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const state = { data: null, history: [], passRate: 0, prevPassRate: 0 };
+
+// ─── Clock ────────────────────────────────────────────────────────────────────
+(function tickClock() {
+  const el = document.getElementById('clock');
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  function update() {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    el.textContent = `${hh}:${mm}:${ss}  ${days[d.getDay()]}  ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  update();
+  setInterval(update, 1000);
+})();
+
+// ─── Particle Background ──────────────────────────────────────────────────────
+(function initParticles() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, particles;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    particles = Array.from({ length: 80 }, () => ({
+      x:  Math.random() * W,
+      y:  Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r:  Math.random() * 1.5 + 0.5,
+      o:  Math.random() * 0.4 + 0.1,
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W;
+      if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H;
+      if (p.y > H) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,212,255,${p.o})`;
+      ctx.fill();
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(0,212,255,${0.06 * (1 - dist / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ─── Arc Reactor ─────────────────────────────────────────────────────────────
+const ArcReactor = (() => {
+  const canvas = document.getElementById('arc-reactor');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  let angle1 = 0, angle2 = 0, pulse = 0, pulseDir = 1;
+  let displayRate = 0, targetRate = 0;
+
+  function setRate(r) { targetRate = r; }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function drawRing(radius, segments, color, width, offset) {
+    const step = (Math.PI * 2) / segments;
+    for (let i = 0; i < segments; i++) {
+      const a1 = offset + i * step;
+      const a2 = a1 + step * 0.7;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, a1, a2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    angle1 += 0.012;
+    angle2 -= 0.008;
+    pulse  += 0.04 * pulseDir;
+    if (pulse > 1 || pulse < 0) pulseDir *= -1;
+    displayRate = lerp(displayRate, targetRate, 0.05);
+
+    const pColor = targetRate >= 90 ? '#00ff88' : targetRate >= 60 ? '#ffaa00' : '#ff3355';
+    const alpha  = 0.3 + pulse * 0.4;
+
+    // Outer glow
+    const outerGlow = ctx.createRadialGradient(cx, cy, 80, cx, cy, 140);
+    outerGlow.addColorStop(0, `rgba(0,212,255,${0.05 + pulse * 0.05})`);
+    outerGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = outerGlow;
+    ctx.fillRect(0, 0, W, H);
+
+    // Outer orbit ring
+    drawRing(130, 8, `rgba(0,136,204,${alpha})`, 1.5, angle2 * 0.7);
+
+    // Second ring
+    drawRing(108, 12, `rgba(0,212,255,${0.4 + pulse * 0.3})`, 2, angle1);
+
+    // Third ring
+    drawRing(88, 6, `rgba(0,212,255,${0.5 + pulse * 0.2})`, 1, -angle2);
+
+    // Inner circle glow
+    const innerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 65);
+    innerGrad.addColorStop(0, `rgba(0,212,255,${0.25 + pulse * 0.2})`);
+    innerGrad.addColorStop(0.5, `rgba(0,85,136,${0.15})`);
+    innerGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = innerGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 65, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, 65, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,212,255,${0.6 + pulse * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Pass rate arc
+    const startA = -Math.PI / 2;
+    const endA   = startA + (Math.PI * 2 * (displayRate / 100));
+    ctx.beginPath();
+    ctx.arc(cx, cy, 55, startA, endA);
+    ctx.strokeStyle = pColor;
+    ctx.lineWidth   = 6;
+    ctx.lineCap     = 'round';
+    ctx.shadowColor = pColor;
+    ctx.shadowBlur  = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Background arc track
+    ctx.beginPath();
+    ctx.arc(cx, cy, 55, endA, startA + Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,212,255,0.1)';
+    ctx.lineWidth   = 6;
+    ctx.stroke();
+
+    // Rotating triangular spokes
+    for (let i = 0; i < 6; i++) {
+      const a = angle1 * 1.5 + (i * Math.PI / 3);
+      const x1 = cx + Math.cos(a) * 30;
+      const y1 = cy + Math.sin(a) * 30;
+      const x2 = cx + Math.cos(a) * 62;
+      const y2 = cy + Math.sin(a) * 62;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = `rgba(0,212,255,${0.2 + pulse * 0.15})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Core
+    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28);
+    coreGrad.addColorStop(0, `rgba(0,212,255,${0.9 + pulse * 0.1})`);
+    coreGrad.addColorStop(0.4, `rgba(0,136,204,${0.7})`);
+    coreGrad.addColorStop(1, `rgba(0,85,136,0.1)`);
+    ctx.fillStyle = coreGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,212,255,${0.8 + pulse * 0.2})`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#00d4ff';
+    ctx.shadowBlur  = 15 + pulse * 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Percentage text
+    ctx.fillStyle = '#ffffff';
+    ctx.font      = `900 ${Math.round(displayRate) >= 100 ? '14' : '16'}px Orbitron`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor  = pColor;
+    ctx.shadowBlur   = 8;
+    ctx.fillText(Math.round(displayRate) + '%', cx, cy - 3);
+    ctx.shadowBlur = 0;
+
+    ctx.font      = '500 8px Orbitron';
+    ctx.fillStyle = 'rgba(192,232,255,0.6)';
+    ctx.fillText('PASS RATE', cx, cy + 14);
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+  return { setRate };
+})();
+
+// ─── EKG Heartbeat ─────────────────────────────────────────────────────────
+const EKG = (() => {
+  const canvas = document.getElementById('ekg-canvas');
+  const ctx    = canvas.getContext('2d');
+  let offset   = 0;
+  let bpm      = 60;
+  let color    = '#00ff88';
+
+  // Heartbeat waveform pattern (normalised -1..1)
+  const BEAT = [0,0,0,0.05,0,0,0,-0.1,0,0,0.15,1.0,-0.8,0.2,0.05,0,0,-0.05,0,0,0,0,0,0,0,0,0,0,0,0];
+
+  function setBpm(b) { bpm = Math.max(30, Math.min(200, b)); }
+  function setColor(c) { color = c; }
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  || 800;
+    canvas.height = canvas.offsetHeight || 80;
+  }
+
+  function draw() {
+    resize();
+    const W = canvas.width, H = canvas.height;
+    const mid = H / 2;
+    const amp = H * 0.38;
+    const speed = 1 + (bpm - 60) / 60;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(0,212,255,0.06)';
+    ctx.lineWidth   = 0.5;
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 20) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    // EKG line
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = 6;
+    ctx.lineJoin    = 'round';
+
+    const len   = BEAT.length;
+    const pxPer = W / (len * 3);
+
+    for (let i = 0; i < W; i++) {
+      const beatIdx = Math.floor(((i + offset) / pxPer) % len);
+      const y = mid - BEAT[beatIdx] * amp;
+      if (i === 0) ctx.moveTo(i, y);
+      else         ctx.lineTo(i, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Glow dot at front
+    const frontBeatIdx = Math.floor((offset / pxPer) % len) ;
+    const frontY = mid - BEAT[frontBeatIdx] * amp;
+    ctx.beginPath();
+    ctx.arc(4, frontY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    offset += speed;
+    if (offset > pxPer * len) offset = 0;
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+  return { setBpm, setColor };
+})();
+
+// ─── Trend Chart ─────────────────────────────────────────────────────────────
+function drawTrend(history) {
+  const canvas = document.getElementById('trend-canvas');
+  if (!canvas) return;
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  || 400;
+  canvas.height = canvas.offsetHeight || 120;
+  const W = canvas.width, H = canvas.height;
+  const pad = { t: 10, r: 10, b: 20, l: 30 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (!history || history.length < 2) {
+    ctx.fillStyle = 'rgba(74,122,153,0.5)';
+    ctx.font = '9px Orbitron';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('AWAITING HISTORY DATA', W / 2, H / 2);
+    return;
+  }
+
+  const n     = Math.min(history.length, 30);
+  const slice = history.slice(-n);
+  const max   = Math.max(...slice.map(d => d.total || 0), 1);
+
+  const xAt = i => pad.l + (i / (n - 1)) * cW;
+  const yAt = v => pad.t + cH - (v / max) * cH;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,212,255,0.07)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (i / 4) * cH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(74,122,153,0.6)';
+    ctx.font = '7px Share Tech Mono';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.round(max * (1 - i / 4)), pad.l - 3, y);
+  }
+
+  const drawLine = (key, color, fill) => {
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const v = slice[i][key] ?? 0;
+      if (i === 0) ctx.moveTo(xAt(i), yAt(v));
+      else         ctx.lineTo(xAt(i), yAt(v));
+    }
+    if (fill) {
+      ctx.lineTo(xAt(n - 1), yAt(0));
+      ctx.lineTo(xAt(0), yAt(0));
+      ctx.closePath();
+      ctx.fillStyle = color.replace(')', ',0.12)').replace('rgb', 'rgba');
+      ctx.fill();
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const v = slice[i][key] ?? 0;
+        if (i === 0) ctx.moveTo(xAt(i), yAt(v));
+        else         ctx.lineTo(xAt(i), yAt(v));
+      }
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  };
+
+  drawLine('passed', '#00ff88', true);
+  drawLine('failed', '#ff3355', false);
+
+  // Dots for last point
+  const last = slice[n - 1];
+  [[last.passed, '#00ff88'], [last.failed, '#ff3355']].forEach(([v, c]) => {
+    ctx.beginPath();
+    ctx.arc(xAt(n - 1), yAt(v ?? 0), 3, 0, Math.PI * 2);
+    ctx.fillStyle = c;
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  // Legend
+  [[' PASS', '#00ff88'], [' FAIL', '#ff3355']].forEach(([label, color], i) => {
+    ctx.fillStyle = color;
+    ctx.font = '8px Share Tech Mono';
+    ctx.textAlign = 'left';
+    ctx.fillText('●' + label, pad.l + i * 60, H - 4);
+  });
+}
+
+// ─── Counter Animation ────────────────────────────────────────────────────────
+function animateCount(el, target, suffix = '', duration = 800) {
+  const start = parseInt(el.textContent) || 0;
+  const range = target - start;
+  if (range === 0) { el.textContent = target + suffix; return; }
+  const tStart = performance.now();
+  function step(now) {
+    const t = Math.min((now - tStart) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(start + range * ease) + suffix;
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ─── Render Data ─────────────────────────────────────────────────────────────
+function render(data, history) {
+  if (!data || data.status !== 'ok') {
+    document.getElementById('no-data-overlay').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('no-data-overlay').classList.add('hidden');
+
+  const { summary, projects, failures, slowTests } = data;
+
+  // Stats
+  animateCount(document.getElementById('s-total'),   summary.total);
+  animateCount(document.getElementById('s-passed'),  summary.passed);
+  animateCount(document.getElementById('s-failed'),  summary.failed);
+  animateCount(document.getElementById('s-skipped'), summary.skipped);
+  document.getElementById('s-rate').textContent     = summary.passRate.toFixed(1) + '%';
+  document.getElementById('s-duration').textContent = formatMs(summary.duration);
+
+  // Arc reactor
+  ArcReactor.setRate(summary.passRate);
+  document.getElementById('reactor-label').textContent =
+    summary.passRate >= 90 ? '◈ ALL SYSTEMS NOMINAL' :
+    summary.passRate >= 60 ? '◈ DEGRADED PERFORMANCE' :
+                             '◈ CRITICAL — FAILURES DETECTED';
+
+  // EKG
+  const bpm = Math.round(40 + (summary.passRate / 100) * 80);
+  EKG.setBpm(bpm);
+  EKG.setColor(summary.passRate >= 90 ? '#00ff88' : summary.passRate >= 60 ? '#ffaa00' : '#ff3355');
+  document.getElementById('ekg-bpm').textContent    = bpm;
+  document.getElementById('ekg-status').textContent = summary.failed > 0 ? 'WARN' : 'NOMINAL';
+  document.getElementById('ekg-last').textContent   = formatTime(summary.startTime);
+
+  // Alert
+  const alertEl = document.getElementById('alert-banner');
+  alertEl.classList.toggle('visible', summary.failed > 0);
+
+  // Projects
+  const totalAll = summary.total || 1;
+  document.getElementById('project-bars').innerHTML =
+    (projects || []).map(p => {
+      const pct  = Math.round((p.total / totalAll) * 100);
+      const cls  = p.name.toLowerCase().includes('api') ? 'api' :
+                   p.name.toLowerCase().includes('hybrid') ? 'hybrid' : 'ui';
+      const rate = p.total > 0 ? Math.round((p.passed / p.total) * 100) : 0;
+      return `
+        <div class="project-bar-item">
+          <div class="project-bar-label">
+            <span>${p.name.toUpperCase()}</span>
+            <span>${p.total} tests · ${rate}% pass</span>
+          </div>
+          <div class="project-bar-track">
+            <div class="project-bar-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+  // Suite list
+  const suiteMap = {};
+  (data.failures || []).concat(data.slowTests || []).forEach(t => {
+    const key = t.project + '/' + t.suite;
+    if (!suiteMap[key]) suiteMap[key] = { name: t.suite, project: t.project, pass: 0, fail: 0 };
+    if (t.status === 'failed') suiteMap[key].fail++;
+    else suiteMap[key].pass++;
+  });
+
+  document.getElementById('suite-list').innerHTML =
+    Object.values(suiteMap).slice(0, 12).map(s => `
+      <div class="suite-item">
+        <span class="suite-name" title="${s.name}">${s.name || '—'}</span>
+        <span class="badge pass">${s.pass}</span>
+        <span class="badge fail">${s.fail}</span>
+      </div>`).join('') || '<div style="color:var(--dim);font-family:var(--mono);font-size:9px;padding:6px">No data</div>';
+
+  // Failures
+  document.getElementById('failures-list').innerHTML =
+    (failures || []).slice(0, 5).map(f => `
+      <div class="failure-item">
+        <div class="failure-title" title="${f.title}">${f.title}</div>
+        <div class="failure-meta">
+          <span>${f.project}</span>
+          <span>${formatMs(f.duration)}</span>
+          <span>${f.suite || ''}</span>
+        </div>
+      </div>`).join('') || noDataEl('No failures recorded');
+
+  // Slow tests
+  document.getElementById('slow-list').innerHTML =
+    (slowTests || []).slice(0, 8).map(t => `
+      <div class="slow-item">
+        <span class="slow-name" title="${t.title}">${t.title}</span>
+        <span style="color:var(--cyan2);font-size:8px;min-width:36px;text-align:right">${t.project}</span>
+        <span class="slow-dur">${formatMs(t.duration)}</span>
+      </div>`).join('') || noDataEl('No data');
+
+  // Timeline
+  const allTests = [...(failures || []), ...(slowTests || [])];
+  document.getElementById('timeline-list').innerHTML =
+    allTests.slice(0, 30).map(t => `
+      <div class="timeline-item">
+        <span class="tl-status ${t.status ?? 'passed'}">${(t.status ?? 'PASS').toUpperCase()}</span>
+        <span class="tl-name" title="${t.title}">${t.title}</span>
+        <span class="tl-proj">${t.project ?? ''}</span>
+        <span class="tl-dur">${formatMs(t.duration)}</span>
+      </div>`).join('') || '<div style="color:var(--dim);padding:6px;font-family:var(--mono);font-size:9px">Run tests to populate log</div>';
+
+  // Trend
+  drawTrend(history);
+}
+
+function noDataEl(msg) {
+  return `<div style="color:var(--dim);font-family:var(--mono);font-size:9px;padding:4px">${msg}</div>`;
+}
+
+function formatMs(ms) {
+  if (!ms || ms < 0) return '--';
+  if (ms < 1000)  return ms + 'ms';
+  if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
+  return Math.floor(ms / 60000) + 'm ' + Math.round((ms % 60000) / 1000) + 's';
+}
+
+function formatTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch { return '--'; }
+}
+
+// ─── Data Fetch Loop ──────────────────────────────────────────────────────────
+async function fetchAndRender() {
+  try {
+    const [dataRes, histRes] = await Promise.all([
+      fetch('/api/results').then(r => r.json()).catch(() => null),
+      fetch('/api/history').then(r => r.json()).catch(() => []),
+    ]);
+    state.data    = dataRes;
+    state.history = histRes || [];
+    render(state.data, state.history);
+  } catch (err) {
+    console.warn('JARVIS: fetch failed', err.message);
+  }
+}
+
+fetchAndRender();
+setInterval(fetchAndRender, 10000);
+</script>
+</body>
+</html>

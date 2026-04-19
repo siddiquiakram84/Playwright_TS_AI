@@ -1,0 +1,579 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB-Playwright",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.4.2" },
+    { "type": "datasource", "id": "influxdb", "name": "InfluxDB", "version": "1.0.0" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "piechart", "name": "Pie chart", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" }
+  ],
+  "annotations": { "list": [] },
+  "description": "JARVIS — Playwright Intelligence System. Real-time test metrics, trends, and health.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["playwright", "automation", "testing", "jarvis"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+        "definition": "from(bucket: \"testresults\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"test_run\") |> keep(columns: [\"project\"]) |> distinct(column: \"project\")",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "project",
+        "options": [],
+        "query": "from(bucket: \"testresults\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"test_run\") |> keep(columns: [\"project\"]) |> distinct(column: \"project\")",
+        "refresh": 2,
+        "type": "query",
+        "label": "Project"
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "◈ JARVIS — Playwright Intelligence System",
+  "uid": "playwright-jarvis-v2",
+  "version": 2,
+  "weekStart": "",
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "gauge",
+      "title": "◈ PASS RATE",
+      "description": "Current pass rate across all projects",
+      "gridPos": { "h": 8, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizHeight": 75,
+        "minVizWidth": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 60 },
+              { "color": "#FADE2A", "value": 75 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"pass_rate\")\n  |> last()\n  |> mean()"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "TOTAL TESTS",
+      "gridPos": { "h": 4, "w": 3, "x": 4, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#5794F2" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#5794F2", "value": null }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"total\")\n  |> sum()"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "PASSED",
+      "gridPos": { "h": 4, "w": 3, "x": 7, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#73BF69" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#73BF69", "value": null }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"passed\")\n  |> sum()"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "FAILED",
+      "gridPos": { "h": 4, "w": 3, "x": 10, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#F2495C" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#F2495C", "value": null }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"failed\")\n  |> sum()"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "SKIPPED",
+      "gridPos": { "h": 4, "w": 3, "x": 13, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#B0C4D8" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#B0C4D8", "value": null }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"skipped\")\n  |> sum()"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "AVG DURATION",
+      "gridPos": { "h": 4, "w": 3, "x": 16, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["mean"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#73BF69", "value": null },
+              { "color": "#FF9830", "value": 30000 },
+              { "color": "#F2495C", "value": 60000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> mean()"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "FLAKY TESTS",
+      "gridPos": { "h": 4, "w": 4, "x": 19, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#73BF69", "value": null },
+              { "color": "#FF9830", "value": 1 },
+              { "color": "#F2495C", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"flaky\")\n  |> sum()"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "PASS RATE (LAST ROW)",
+      "gridPos": { "h": 4, "w": 3, "x": 4, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 60 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"pass_rate\")\n  |> mean()"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "◈ TEST TREND — 7 DAYS",
+      "description": "Passed vs Failed test count over time",
+      "gridPos": { "h": 10, "w": 16, "x": 0, "y": 8 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["lastNotNull", "max", "min"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "passed" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#73BF69" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "failed" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#F2495C" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "skipped" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#B0C4D8" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"passed\" or r._field == \"failed\" or r._field == \"skipped\")\n  |> aggregateWindow(every: 1h, fn: sum, createEmpty: false)\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "type": "piechart",
+      "title": "◈ PROJECT DISTRIBUTION",
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 8 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "pieType": "donut",
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["value", "percent"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"total\")\n  |> group(columns: [\"project\"])\n  |> sum()\n  |> rename(columns: {_value: \"tests\"})"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "◈ PASS RATE TREND — 7 DAYS",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "showPoints": "auto"
+          },
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#FF9830", "value": 60 },
+              { "color": "#73BF69", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"pass_rate\")\n  |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)"
+        }
+      ]
+    },
+
+    {
+      "id": 13,
+      "type": "barchart",
+      "title": "◈ DURATION BY PROJECT",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "orientation": "horizontal",
+        "barWidth": 0.6,
+        "groupWidth": 0.7,
+        "stacking": "none",
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 80 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"test_run\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> group(columns: [\"project\"])\n  |> mean()\n  |> rename(columns: {_value: \"avg_duration\"})"
+        }
+      ]
+    },
+
+    {
+      "id": 14,
+      "type": "table",
+      "title": "◈ TOP FAILING TESTS",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false },
+        "cellHeight": "sm",
+        "frameIndex": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text",
+                  "applyToRow": false
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "failed": { "color": "#F2495C", "index": 0 }, "passed": { "color": "#73BF69", "index": 1 } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"test_case\")\n  |> filter(fn: (r) => r.status == \"failed\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> group(columns: [\"title\", \"project\", \"suite\"])\n  |> count()\n  |> rename(columns: {_value: \"fail_count\"})\n  |> sort(columns: [\"fail_count\"], desc: true)\n  |> limit(n: 20)"
+        }
+      ]
+    },
+
+    {
+      "id": 15,
+      "type": "table",
+      "title": "◈ SLOWEST TESTS (avg ms)",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false },
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "align": "auto", "filterable": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "avg_duration" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "gauge", "mode": "basic" }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#73BF69", "value": null },
+                    { "color": "#FF9830", "value": 5000 },
+                    { "color": "#F2495C", "value": 15000 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb-playwright" },
+          "query": "from(bucket: \"testresults\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"test_case\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> group(columns: [\"title\", \"project\", \"suite\"])\n  |> mean()\n  |> rename(columns: {_value: \"avg_duration\"})\n  |> sort(columns: [\"avg_duration\"], desc: true)\n  |> limit(n: 20)"
+        }
+      ]
+    }
+
+  ]
+}
