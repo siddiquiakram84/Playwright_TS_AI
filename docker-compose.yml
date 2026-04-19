@@ -1,54 +1,166 @@
 version: '3.8'
 
+# ─── Reusable base for all Playwright runner services ─────────────
+x-playwright-base: &playwright-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: playwright-ts-ai:latest
+  shm_size: '2gb'
+  environment: &playwright-env
+    ENV:                  ${ENV:-test}
+    UI_BASE_URL:          ${UI_BASE_URL:-https://automationexercise.com}
+    API_BASE_URL:         ${API_BASE_URL:-https://fakestoreapi.com}
+    TEST_USER_EMAIL:      ${TEST_USER_EMAIL:-test@example.com}
+    TEST_USER_PASSWORD:   ${TEST_USER_PASSWORD:-Test@1234}
+    DEFAULT_TIMEOUT:      ${DEFAULT_TIMEOUT:-30000}
+    API_TIMEOUT:          ${API_TIMEOUT:-15000}
+    ALLURE_RESULTS_DIR:   allure-results
+    INFLUXDB_URL:         http://influxdb:8086
+    INFLUXDB_TOKEN:       ${INFLUXDB_TOKEN:-mytoken}
+    INFLUXDB_ORG:         playwright
+    INFLUXDB_BUCKET:      testresults
+  volumes: &playwright-volumes
+    - ./allure-results:/app/allure-results
+    - ./playwright-report:/app/playwright-report
+    - ./test-results:/app/test-results
+    - ./logs:/app/logs
+  networks:
+    - pw-net
+
+# ─── Services ─────────────────────────────────────────────────────
 services:
+
+  # ── Test Runners ──────────────────────────────────────────────
   playwright:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: playwright-ts-ai:latest
-    container_name: playwright-runner
-    environment:
-      - ENV=${ENV:-test}
-      - UI_BASE_URL=${UI_BASE_URL:-https://automationexercise.com}
-      - API_BASE_URL=${API_BASE_URL:-https://fakestoreapi.com}
-      - TEST_USER_EMAIL=${TEST_USER_EMAIL:-test@example.com}
-      - TEST_USER_PASSWORD=${TEST_USER_PASSWORD:-Test@1234}
-      - DEFAULT_TIMEOUT=${DEFAULT_TIMEOUT:-30000}
-      - API_TIMEOUT=${API_TIMEOUT:-15000}
-      - ALLURE_RESULTS_DIR=allure-results
-    volumes:
-      - ./allure-results:/app/allure-results
-      - ./playwright-report:/app/playwright-report
-      - ./test-results:/app/test-results
-      - ./logs:/app/logs
-    command: npx playwright test
+    <<: *playwright-base
+    container_name: pw-all
+    profiles: [tests, all]
 
   playwright-ui:
-    extends:
-      service: playwright
-    container_name: playwright-ui-runner
-    command: npx playwright test --project=ui
+    <<: *playwright-base
+    container_name: pw-ui
+    command: ["--project=ui"]
+    profiles: [tests, ui]
 
   playwright-api:
-    extends:
-      service: playwright
-    container_name: playwright-api-runner
-    command: npx playwright test --project=api
+    <<: *playwright-base
+    container_name: pw-api
+    command: ["--project=api"]
+    profiles: [tests, api]
 
   playwright-hybrid:
-    extends:
-      service: playwright
-    container_name: playwright-hybrid-runner
-    command: npx playwright test --project=hybrid
+    <<: *playwright-base
+    container_name: pw-hybrid
+    command: ["--project=hybrid"]
+    profiles: [tests, hybrid]
 
+  # ── InfluxDB (time-series metrics) ───────────────────────────
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE:         setup
+      DOCKER_INFLUXDB_INIT_USERNAME:     admin
+      DOCKER_INFLUXDB_INIT_PASSWORD:     adminpassword
+      DOCKER_INFLUXDB_INIT_ORG:          playwright
+      DOCKER_INFLUXDB_INIT_BUCKET:       testresults
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN:  ${INFLUXDB_TOKEN:-mytoken}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    networks:
+      - pw-net
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    profiles: [monitoring]
+
+  # ── Grafana (JARVIS dashboard) ────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER:         admin
+      GF_SECURITY_ADMIN_PASSWORD:     admin
+      GF_USERS_ALLOW_SIGN_UP:         "false"
+      GF_AUTH_ANONYMOUS_ENABLED:      "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE:     Viewer
+      GF_FEATURE_TOGGLES_ENABLE:      publicDashboards
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/playwright-jarvis.json
+      GF_INSTALL_PLUGINS:             grafana-clock-panel,grafana-piechart-panel,grafana-polystat-panel
+      GF_RENDERING_SERVER_URL:        http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL:      http://grafana:3000/
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks:
+      - pw-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health | grep -q ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    profiles: [monitoring]
+
+  # ── Allure Docker Service ──────────────────────────────────────
   allure:
     image: frankescobar/allure-docker-service:latest
     container_name: allure-server
-    environment:
-      CHECK_RESULTS_EVERY_SECONDS: 5
-      KEEP_HISTORY: 1
+    restart: unless-stopped
     ports:
       - "5050:5050"
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 5
+      KEEP_HISTORY:                "1"
+      KEEP_HISTORY_LATEST:         "25"
     volumes:
       - ./allure-results:/app/allure-results
-      - ./allure-report:/app/default-reports
+      - allure-reports:/app/allure-reports
+    networks:
+      - pw-net
+    profiles: [monitoring]
+
+  # ── JARVIS Animated Dashboard ─────────────────────────────────
+  jarvis:
+    image: node:20-alpine
+    container_name: jarvis-dashboard
+    restart: unless-stopped
+    working_dir: /app/dashboard
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./dashboard:/app/dashboard:ro
+      - ./test-results:/app/test-results:ro
+      - ./allure-results:/app/allure-results:ro
+    command: ["node", "server.js"]
+    networks:
+      - pw-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    profiles: [monitoring]
+
+# ─── Volumes ──────────────────────────────────────────────────────
+volumes:
+  influxdb-data:
+  grafana-data:
+  allure-reports:
+
+# ─── Networks ─────────────────────────────────────────────────────
+networks:
+  pw-net:
+    driver: bridge
