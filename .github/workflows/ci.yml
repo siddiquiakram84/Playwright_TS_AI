@@ -42,7 +42,7 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           DEFAULT_TIMEOUT: 30000
           API_TIMEOUT: 15000
-          ALLURE_RESULTS_DIR: allure-results
+          ALLURE_RESULTS_DIR: dashboard/allure/results
 
       - name: Upload API test results
         if: always()
@@ -50,8 +50,8 @@ jobs:
         with:
           name: api-test-results
           path: |
-            allure-results/
-            playwright-report/
+            dashboard/allure/results/
+            dashboard/playwright/report/
           retention-days: 14
 
   test-ui:
@@ -70,7 +70,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+        run: npx playwright install --with-deps
 
       - name: Run UI tests
         run: npx playwright test --project=ui
@@ -82,7 +82,7 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           DEFAULT_TIMEOUT: 30000
           API_TIMEOUT: 15000
-          ALLURE_RESULTS_DIR: allure-results
+          ALLURE_RESULTS_DIR: dashboard/allure/results
 
       - name: Upload UI test results
         if: always()
@@ -90,9 +90,9 @@ jobs:
         with:
           name: ui-test-results
           path: |
-            allure-results/
-            playwright-report/
-            test-results/
+            dashboard/allure/results/
+            dashboard/playwright/report/
+            dashboard/playwright/test-results/
           retention-days: 14
 
   test-hybrid:
@@ -112,7 +112,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+        run: npx playwright install --with-deps
 
       - name: Run hybrid tests
         run: npx playwright test --project=hybrid
@@ -124,7 +124,7 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           DEFAULT_TIMEOUT: 30000
           API_TIMEOUT: 15000
-          ALLURE_RESULTS_DIR: allure-results
+          ALLURE_RESULTS_DIR: dashboard/allure/results
 
       - name: Upload hybrid test results
         if: always()
@@ -132,8 +132,8 @@ jobs:
         with:
           name: hybrid-test-results
           path: |
-            allure-results/
-            playwright-report/
+            dashboard/allure/results/
+            dashboard/playwright/report/
           retention-days: 14
 
   allure-report:
@@ -151,21 +151,21 @@ jobs:
 
       - name: Merge allure results
         run: |
-          mkdir -p allure-results
-          find artifacts/ -name '*.json' -path '*/allure-results/*' -exec cp {} allure-results/ \;
+          mkdir -p dashboard/allure/results
+          find artifacts/ -name '*.json' -path '*/allure/results/*' -exec cp {} dashboard/allure/results/ \;
 
       - name: Generate Allure report
         uses: simple-elf/allure-report-action@v1.9
         with:
-          allure_results: allure-results
-          allure_report: allure-report
+          allure_results: dashboard/allure/results
+          allure_report: dashboard/allure/report
           allure_history: allure-history
 
       - name: Upload Allure report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
-          path: allure-report/
+          path: dashboard/allure/report/
           retention-days: 30
 
       - name: Deploy to GitHub Pages
@@ -173,4 +173,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: allure-report
+          publish_dir: dashboard/allure/report

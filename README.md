@@ -1,6 +1,6 @@
 # Playwright TS AI — Enterprise E2E Automation Framework
 
-[![CI](https://github.com/your-org/playwright-ts-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/playwright-ts-ai/actions/workflows/ci.yml)
+[![CI](https://github.com/siddiquiakram84/Playwright_TS_AI/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/playwright-ts-ai/actions/workflows/ci.yml)
 [![Playwright](https://img.shields.io/badge/Playwright-1.49.0-45ba4b?logo=playwright)](https://playwright.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6?logo=typescript)](https://www.typescriptlang.org)
 [![Node](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)](https://nodejs.org)

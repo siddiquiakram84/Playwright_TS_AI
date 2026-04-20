@@ -5,10 +5,11 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const DEFAULT_TIMEOUT = parseInt(process.env.DEFAULT_TIMEOUT ?? '30000');
-const API_TIMEOUT = parseInt(process.env.API_TIMEOUT ?? '15000');
+const API_TIMEOUT     = parseInt(process.env.API_TIMEOUT     ?? '15000');
+const HEADLESS        = process.env.HEADED !== 'true';
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: './aut/tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -17,17 +18,18 @@ export default defineConfig({
 
   reporter: [
     ['list'],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['json', { outputFile: 'dashboard/playwright/test-results/results.json' }],
+    ['html', { outputFolder: 'dashboard/playwright/report', open: 'never' }],
     ['allure-playwright', {
       detail: true,
-      outputFolder: process.env.ALLURE_RESULTS_DIR ?? 'allure-results',
+      outputFolder: process.env.ALLURE_RESULTS_DIR ?? 'dashboard/allure/results',
       suiteTitle: false,
     }],
   ],
 
   use: {
     baseURL: process.env.UI_BASE_URL,
+    headless: HEADLESS,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -36,9 +38,10 @@ export default defineConfig({
   },
 
   projects: [
+    // ── UI: Chrome (Chromium) ────────────────────────────────────────────────
     {
       name: 'ui',
-      testDir: './tests/ui',
+      testDir: './aut/tests/ui',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: process.env.UI_BASE_URL,
@@ -48,17 +51,47 @@ export default defineConfig({
         },
       },
     },
+
+    // ── UI: Firefox ──────────────────────────────────────────────────────────
     {
       name: 'ui-firefox',
-      testDir: './tests/ui',
+      testDir: './aut/tests/ui',
       use: {
         ...devices['Desktop Firefox'],
         baseURL: process.env.UI_BASE_URL,
+        viewport: { width: 1280, height: 720 },
       },
     },
+
+    // ── UI: Safari / WebKit ──────────────────────────────────────────────────
+    {
+      name: 'ui-webkit',
+      testDir: './aut/tests/ui',
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: process.env.UI_BASE_URL,
+        viewport: { width: 1280, height: 720 },
+      },
+    },
+
+    // ── UI: Microsoft Edge ───────────────────────────────────────────────────
+    {
+      name: 'ui-edge',
+      testDir: './aut/tests/ui',
+      use: {
+        ...devices['Desktop Edge'],
+        baseURL: process.env.UI_BASE_URL,
+        viewport: { width: 1280, height: 720 },
+        launchOptions: {
+          args: ['--no-sandbox', '--disable-dev-shm-usage'],
+        },
+      },
+    },
+
+    // ── API ──────────────────────────────────────────────────────────────────
     {
       name: 'api',
-      testDir: './tests/api',
+      testDir: './aut/tests/api',
       use: {
         baseURL: process.env.API_BASE_URL,
         extraHTTPHeaders: {
@@ -68,9 +101,11 @@ export default defineConfig({
         actionTimeout: API_TIMEOUT,
       },
     },
+
+    // ── Hybrid ───────────────────────────────────────────────────────────────
     {
       name: 'hybrid',
-      testDir: './tests/hybrid',
+      testDir: './aut/tests/hybrid',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: process.env.UI_BASE_URL,
@@ -79,5 +114,5 @@ export default defineConfig({
     },
   ],
 
-  outputDir: 'test-results',
+  outputDir: 'dashboard/playwright/test-results',
 });

@@ -10,17 +10,20 @@
     "test:hybrid":       "playwright test --project=hybrid",
     "test:headed":       "playwright test --headed --project=ui",
     "test:debug":        "playwright test --debug",
-    "allure:generate":   "allure generate allure-results --clean -o allure-report",
-    "allure:open":       "allure open allure-report",
-    "allure:serve":      "allure serve allure-results",
-    "report":            "playwright show-report",
-    "metrics:push":      "tsx scripts/push-metrics.ts",
-    "dashboard":         "node dashboard/server.js",
+    "test:firefox":      "playwright test --project=ui-firefox",
+    "test:webkit":       "playwright test --project=ui-webkit",
+    "test:edge":         "playwright test --project=ui-edge",
+    "test:browsers":     "playwright test --project=ui --project=ui-firefox --project=ui-webkit --project=ui-edge",
+    "allure:generate":   "allure generate dashboard/allure/results --clean -o dashboard/allure/report",
+    "allure:open":       "allure open dashboard/allure/report",
+    "allure:serve":      "allure serve dashboard/allure/results",
+    "report":            "playwright show-report dashboard/playwright/report",
+    "metrics:push":      "tsx core/scripts/push-metrics.ts",
+    "dashboard":         "node dashboard/jarvis/server.js",
     "type-check":        "tsc --noEmit",
-    "clean":             "rimraf allure-results allure-report playwright-report test-results logs"
+    "clean":             "rimraf dashboard/allure/results dashboard/allure/report dashboard/playwright/report dashboard/playwright/test-results logs"
   },
   "dependencies": {
-    "@influxdata/influxdb-client": "^1.35.0",
     "ajv":                         "^8.17.1",
     "ajv-formats":                 "^3.0.1",
     "dotenv":                      "^16.4.5",
@@ -33,6 +36,9 @@
     "rimraf":           "^6.0.1",
     "tsx":              "^4.19.2",
     "typescript":       "^5.6.3"
+  },
+  "optionalDependencies": {
+    "@influxdata/influxdb-client": "^1.35.0"
   },
   "engines": {
     "node": ">=20.0.0"

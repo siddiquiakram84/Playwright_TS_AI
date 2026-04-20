@@ -6,15 +6,16 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Install only Chromium browser + system deps
-RUN npx playwright install chromium --with-deps
+# Install all browsers + system deps (required for multi-browser matrix runs)
+RUN npx playwright install --with-deps
 
 # Copy framework source
 COPY . .
 
 # Ensure output directories exist with correct permissions
-RUN mkdir -p allure-results playwright-report test-results logs \
-    && chmod -R 777 allure-results playwright-report test-results logs
+RUN mkdir -p dashboard/allure/results dashboard/allure/report \
+              dashboard/playwright/report dashboard/playwright/test-results logs \
+    && chmod -R 777 dashboard/allure dashboard/playwright logs
 
 ENV NODE_ENV=test \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright

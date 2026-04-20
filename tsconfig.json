@@ -13,11 +13,13 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@pages/*": ["pages/*"],
-      "@api/*": ["api/*"],
-      "@utils/*": ["utils/*"],
-      "@fixtures/*": ["fixtures/*"],
-      "@test-data/*": ["test-data/*"]
+      "@aut/*":       ["aut/*"],
+      "@core/*":      ["core/*"],
+      "@pages/*":     ["aut/pages/*"],
+      "@api/*":       ["aut/api/*"],
+      "@utils/*":     ["core/utils/*"],
+      "@fixtures/*":  ["core/fixtures/*"],
+      "@test-data/*": ["aut/test-data/*"]
     }
   },
   "include": ["**/*.ts"],

@@ -15,15 +15,16 @@ x-playwright-base: &playwright-base
     TEST_USER_PASSWORD:   ${TEST_USER_PASSWORD:-Test@1234}
     DEFAULT_TIMEOUT:      ${DEFAULT_TIMEOUT:-30000}
     API_TIMEOUT:          ${API_TIMEOUT:-15000}
-    ALLURE_RESULTS_DIR:   allure-results
+    ALLURE_RESULTS_DIR:   dashboard/allure/results
     INFLUXDB_URL:         http://influxdb:8086
     INFLUXDB_TOKEN:       ${INFLUXDB_TOKEN:-mytoken}
     INFLUXDB_ORG:         playwright
     INFLUXDB_BUCKET:      testresults
   volumes: &playwright-volumes
-    - ./allure-results:/app/allure-results
-    - ./playwright-report:/app/playwright-report
-    - ./test-results:/app/test-results
+    - ./dashboard/allure/results:/app/dashboard/allure/results
+    - ./dashboard/allure/report:/app/dashboard/allure/report
+    - ./dashboard/playwright/report:/app/dashboard/playwright/report
+    - ./dashboard/playwright/test-results:/app/dashboard/playwright/test-results
     - ./logs:/app/logs
   networks:
     - pw-net
@@ -100,8 +101,8 @@ services:
       GF_RENDERING_CALLBACK_URL:      http://grafana:3000/
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./dashboard/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboard/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       influxdb:
         condition: service_healthy
@@ -126,7 +127,7 @@ services:
       KEEP_HISTORY:                "1"
       KEEP_HISTORY_LATEST:         "25"
     volumes:
-      - ./allure-results:/app/allure-results
+      - ./dashboard/allure/results:/app/allure-results
       - allure-reports:/app/allure-reports
     networks:
       - pw-net
@@ -137,14 +138,18 @@ services:
     image: node:20-alpine
     container_name: jarvis-dashboard
     restart: unless-stopped
-    working_dir: /app/dashboard
+    working_dir: /app
     ports:
       - "9090:9090"
+    environment:
+      RESULTS_FILE: /app/dashboard/playwright/test-results/results.json
+      ALLURE_DIR:   /app/dashboard/allure/results
+      HISTORY_FILE: /app/dashboard/jarvis/metrics-history.json
     volumes:
-      - ./dashboard:/app/dashboard:ro
-      - ./test-results:/app/test-results:ro
-      - ./allure-results:/app/allure-results:ro
-    command: ["node", "server.js"]
+      - ./dashboard/jarvis:/app/dashboard/jarvis
+      - ./dashboard/playwright/test-results:/app/dashboard/playwright/test-results:ro
+      - ./dashboard/allure/results:/app/dashboard/allure/results:ro
+    command: ["node", "dashboard/jarvis/server.js"]
     networks:
       - pw-net
     healthcheck:
