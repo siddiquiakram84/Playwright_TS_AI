@@ -1,0 +1,24 @@
+{
+  "createCart": {
+    "userId": 1,
+    "date": "2024-01-15",
+    "products": [
+      { "productId": 1, "quantity": 2 },
+      { "productId": 3, "quantity": 1 }
+    ]
+  },
+  "updateCart": {
+    "userId": 1,
+    "date": "2024-01-20",
+    "products": [
+      { "productId": 5, "quantity": 3 }
+    ]
+  },
+  "payment": {
+    "nameOnCard": "John Automation",
+    "cardNumber": "4111111111111111",
+    "cvc": "123",
+    "expiryMonth": "12",
+    "expiryYear": "2027"
+  }
+}

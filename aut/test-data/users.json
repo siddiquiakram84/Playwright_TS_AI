@@ -1,0 +1,52 @@
+{
+  "validLogin": {
+    "email": "test@example.com",
+    "password": "Test@1234"
+  },
+  "invalidLogin": [
+    {
+      "scenario": "wrong password",
+      "email": "test@example.com",
+      "password": "WrongPass!",
+      "expectedError": "Your email or password is incorrect!"
+    },
+    {
+      "scenario": "non-existent user",
+      "email": "nouser_xyz@example.com",
+      "password": "Test@1234",
+      "expectedError": "Your email or password is incorrect!"
+    }
+  ],
+  "newUser": {
+    "name": "John Automation",
+    "title": "Mr",
+    "password": "Secure@789",
+    "birthDay": "15",
+    "birthMonth": "June",
+    "birthYear": "1990",
+    "firstName": "John",
+    "lastName": "Automation",
+    "address": "123 Test Street",
+    "country": "United States",
+    "state": "California",
+    "city": "Los Angeles",
+    "zipcode": "90001",
+    "mobileNumber": "5551234567"
+  },
+  "apiUser": {
+    "email": "john@gmail.com",
+    "username": "johnd",
+    "password": "m38rmF$",
+    "name": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "address": {
+      "city": "kilchberg",
+      "street": "7835 new road",
+      "number": 3,
+      "zipcode": "12926-3874"
+    },
+    "phone": "1-570-236-7033"
+  }
+}
