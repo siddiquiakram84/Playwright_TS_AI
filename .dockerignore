@@ -1,0 +1,19 @@
+# ── Node modules (rebuilt inside image via npm ci) ────────────────────────────
+node_modules
+
+# ── Git & CI metadata ─────────────────────────────────────────────────────────
+.git
+.github
+*.log
+
+# ── Test artifacts & reports (volume-mounted at runtime) ──────────────────────
+dashboard/allure/results/
+dashboard/allure/report/
+dashboard/playwright/report/
+dashboard/playwright/test-results/
+dashboard/jarvis/metrics-history.json
+
+# ── Local runtime files ───────────────────────────────────────────────────────
+logs/
+.env
+.env.local

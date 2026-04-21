@@ -22,7 +22,7 @@ export default defineConfig({
     ['html', { outputFolder: 'dashboard/playwright/report', open: 'never' }],
     ['allure-playwright', {
       detail: true,
-      outputFolder: process.env.ALLURE_RESULTS_DIR ?? 'dashboard/allure/results',
+      resultsDir: process.env.ALLURE_RESULTS_DIR ?? 'dashboard/allure/results',
       suiteTitle: false,
     }],
   ],

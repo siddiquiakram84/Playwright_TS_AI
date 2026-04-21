@@ -30,6 +30,9 @@ error()   { echo -e "  ${RED}✘${RESET}  $*" >&2; }
 section() { echo -e "\n  ${BCYAN}── $* ──${RESET}\n"; }
 divider() { echo -e "  ${DIM}$(printf '─%.0s' {1..60})${RESET}"; }
 
+# ─── WSL2 detection ───────────────────────────────────────────────────────────
+is_wsl2() { grep -qi microsoft /proc/version 2>/dev/null; }
+
 # ─── Prerequisite check ───────────────────────────────────────────────────────
 check_prereqs() {
   local missing=0
@@ -163,14 +166,45 @@ require_docker() {
 require_browser() {
   local browser=$1
 
+  # WSL2 + WebKit: provide targeted guidance before binary/lib checks
+  if [[ "$browser" == "webkit" ]] && is_wsl2; then
+    echo ""
+    info "${BOLD}WSL2 detected — WebKit (Safari) notes:${RESET}"
+    info "  • Headless mode works after installing system deps (see fix below)"
+    info "  • Headed mode requires a display server:"
+    info "    - Windows 11 with WSLg: works out-of-the-box"
+    info "    - Windows 10: install VcXsrv or X410, then: ${CYAN}export DISPLAY=:0${RESET}"
+    if [[ -z "${DISPLAY:-}" ]]; then
+      warn "  DISPLAY is not set — webkit will be forced headless on WSL2"
+    fi
+    echo ""
+  fi
+
   # Step 1 — binary downloaded?
   if ! ls "$HOME/.cache/ms-playwright/" 2>/dev/null | grep -qi "^${browser}"; then
-    error "Browser ${BOLD}${browser}${RESET} binary is not downloaded."
+    warn "Browser ${BOLD}${browser}${RESET} binary is not downloaded."
     echo ""
-    warn "Fix:  ${BOLD}sudo npx playwright install ${browser} --with-deps${RESET}"
-    echo ""
-    read -rp "  Press [Enter] to continue..."
-    return 1
+    echo -ne "  ${YELLOW}?${RESET}  Install it now? (runs: sudo npx playwright install ${browser} --with-deps) [Y/n]: "
+    local _ans
+    read -r _ans </dev/tty
+    if [[ "${_ans,,}" != "n" ]]; then
+      echo ""
+      info "Installing ${BOLD}${browser}${RESET} — this may take a few minutes..."
+      divider
+      if sudo npx playwright install "${browser}" --with-deps; then
+        success "Browser ${BOLD}${browser}${RESET} installed successfully."
+      else
+        error "Installation failed. Try manually:"
+        echo -e "  ${BOLD}${CYAN}sudo npx playwright install ${browser} --with-deps${RESET}"
+        echo ""
+        read -rp "  Press [Enter] to continue..."
+        return 1
+      fi
+    else
+      echo ""
+      read -rp "  Press [Enter] to continue..."
+      return 1
+    fi
   fi
 
   # Step 2 — system libraries present?
@@ -185,11 +219,21 @@ require_browser() {
       warn "  Missing: ${RED}${lib}${RESET}"
     done <<< "$missing_libs"
     echo ""
-    warn "Fix — run this once in your terminal:"
-    echo -e "  ${BOLD}${CYAN}sudo env \"PATH=\$PATH\" npx playwright install-deps ${browser}${RESET}"
-    echo ""
-    read -rp "  Press [Enter] to continue..."
-    return 1
+    echo -ne "  ${YELLOW}?${RESET}  Fix system deps now? (runs: sudo npx playwright install-deps ${browser}) [Y/n]: "
+    local _depsans
+    read -r _depsans </dev/tty
+    if [[ "${_depsans,,}" != "n" ]]; then
+      echo ""
+      sudo env "PATH=$PATH" npx playwright install-deps "${browser}" \
+        && success "System deps installed." \
+        || { error "Dep install failed — try manually."; read -rp "  Press [Enter]..."; return 1; }
+      if [[ "$browser" == "webkit" ]] && is_wsl2; then
+        info "WSL2 extra webkit libs: sudo apt-get install -y libwoff1 libopus0 libwebp-dev"
+      fi
+    else
+      read -rp "  Press [Enter] to continue..."
+      return 1
+    fi
   fi
 
   return 0
@@ -224,17 +268,30 @@ post_run_dashboards() {
   echo ""
   section "Launching dashboards"
 
-  # ── 1. Ensure JARVIS is running on :9090 ──────────────────────────────────
-  if ! curl -sf http://localhost:9090/health >/dev/null 2>&1; then
-    info "Starting JARVIS dashboard server..."
-    nohup node dashboard/jarvis/server.js >/tmp/jarvis.log 2>&1 &
-    disown $!
-    local tries=0
-    until curl -sf http://localhost:9090/health >/dev/null 2>&1 || [[ $tries -ge 10 ]]; do
-      sleep 0.5
-      tries=$(( tries + 1 ))
-    done
+  # ── 0. Auto-push metrics to InfluxDB if monitoring stack is running ──────────
+  if curl -sf http://localhost:8086/ping >/dev/null 2>&1; then
+    info "InfluxDB detected — pushing test metrics..."
+    npm run metrics:push >/tmp/metrics-push.log 2>&1 \
+      && success "Metrics pushed to InfluxDB  →  ${CYAN}http://localhost:3000${RESET}" \
+      || warn "Metrics push failed — check ${BOLD}/tmp/metrics-push.log${RESET}"
   fi
+
+  # ── 1. (Re)start JARVIS on :9090 with explicit absolute paths ────────────
+  # Always kill and restart so a stale server from a previous session
+  # (with wrong cwd) never silently serves no-data.
+  pkill -f "node.*dashboard/jarvis/server.js" 2>/dev/null || true
+  sleep 0.3
+  local proj_root
+  proj_root="$(pwd)"
+  RESULTS_FILE="${proj_root}/dashboard/playwright/test-results/results.json" \
+  HISTORY_FILE="${proj_root}/dashboard/jarvis/metrics-history.json" \
+  nohup node dashboard/jarvis/server.js >/tmp/jarvis.log 2>&1 &
+  disown $!
+  local tries=0
+  until curl -sf http://localhost:9090/health >/dev/null 2>&1 || [[ $tries -ge 20 ]]; do
+    sleep 0.3
+    tries=$(( tries + 1 ))
+  done
   if curl -sf http://localhost:9090/api/results >/dev/null 2>&1; then
     success "JARVIS fed  →  ${CYAN}http://localhost:9090${RESET}"
   else
@@ -251,9 +308,19 @@ post_run_dashboards() {
   fi
 
   # ── 3. Generate Allure report, then serve on :9092 ────────────────────────
+  # allure-playwright v3 uses resultsDir; fall back to root allure-results/
+  # for any results generated before that fix was applied.
   local allure_src="dashboard/allure/results"
   local allure_out="dashboard/allure/report"
-  if [[ -d "$allure_src" ]] && compgen -G "${allure_src}/*.json" >/dev/null 2>&1; then
+  if compgen -G "${allure_src}/*.json" >/dev/null 2>&1; then
+    : # primary path has results — use as-is
+  elif compgen -G "allure-results/*.json" >/dev/null 2>&1; then
+    warn "Allure results found at ${BOLD}allure-results/${RESET} (old location) — moving to ${allure_src}/"
+    mkdir -p "$allure_src"
+    mv allure-results/* "$allure_src/" 2>/dev/null || true
+    rmdir allure-results 2>/dev/null || true
+  fi
+  if compgen -G "${allure_src}/*.json" >/dev/null 2>&1; then
     info "Generating Allure report..."
     allure generate "$allure_src" --clean -o "$allure_out" >/dev/null 2>&1 \
       && success "Allure report generated" \
@@ -263,7 +330,7 @@ post_run_dashboards() {
     serve_static 9092 "$allure_out"
     success "Allure Report      →  ${CYAN}http://localhost:9092${RESET}"
   else
-    warn "No Allure report found — skipped"
+    warn "No Allure report found — run tests first or install: npm install -g allure-commandline"
   fi
 
   # ── 4. Open all available dashboards in the browser ───────────────────────
@@ -314,6 +381,7 @@ main() {
         ;;
       4)
         run_cmd "Run API tests" npx playwright test --project=api
+        post_run_dashboards
         ;;
       5)
         run_browser_cmd "Run Hybrid tests" --project=hybrid

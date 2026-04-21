@@ -14,7 +14,7 @@ async function main(): Promise<void> {
   console.log(`  InfluxDB: ${influxUrl} → ${influxOrg}/${influxBucket}`);
   console.log('  Parsing: test-results/results.json\n');
 
-  const reporter = new MetricsReporter(influxUrl, influxToken, influxOrg, influxBucket);
+  const reporter = new MetricsReporter(influxUrl, influxToken, influxOrg, influxBucket, 'dashboard/playwright/test-results/results.json');
 
   await reporter.pushMetrics();
   console.log('\n  ✔  Metrics pushed successfully.\n');

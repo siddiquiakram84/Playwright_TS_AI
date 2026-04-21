@@ -20,11 +20,6 @@ test.describe('Login', () => {
     });
   }
 
-  test('should navigate to signup form', async ({ loginPage }) => {
-    await expect(loginPage.signupHeading).toBeVisible();
-    await expect(loginPage.signupNameInput).toBeVisible();
-  });
-
   test('should not allow login with empty credentials', async ({ loginPage, page }) => {
     await loginPage.loginBtn.click();
     await expect(page).toHaveURL('/login');

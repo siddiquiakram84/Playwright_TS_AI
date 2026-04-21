@@ -94,7 +94,7 @@ export class MetricsReporter {
     token: string,
     org: string,
     bucket: string,
-    resultsPath = 'test-results/results.json',
+    resultsPath = 'dashboard/playwright/test-results/results.json',
   ) {
     if (!InfluxDBCtor || !PointCtor) {
       logger.warn(

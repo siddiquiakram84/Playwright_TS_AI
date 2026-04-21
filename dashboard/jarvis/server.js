@@ -142,20 +142,26 @@ const MIME = {
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
 
+  const NO_CACHE = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma':        'no-cache',
+    'Expires':       '0',
+  };
+
   if (url === '/api/results') {
     const data = JSON.stringify(parseResults());
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', ...NO_CACHE });
     return res.end(data);
   }
 
   if (url === '/api/history') {
     const data = JSON.stringify(loadHistory());
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', ...NO_CACHE });
     return res.end(data);
   }
 
   if (url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.writeHead(200, { 'Content-Type': 'application/json', ...NO_CACHE });
     return res.end(JSON.stringify({ status: 'ok', ts: new Date().toISOString() }));
   }
 
