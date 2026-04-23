@@ -6,6 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const DEFAULT_TIMEOUT = parseInt(process.env.DEFAULT_TIMEOUT ?? '30000');
 const API_TIMEOUT     = parseInt(process.env.API_TIMEOUT     ?? '15000');
+const AI_TIMEOUT      = parseInt(process.env.AI_TIMEOUT      ?? '120000');
 const HEADLESS        = process.env.HEADED !== 'true';
 
 export default defineConfig({
@@ -110,6 +111,23 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: process.env.UI_BASE_URL,
         viewport: { width: 1280, height: 720 },
+      },
+    },
+
+    // ── GenAI Superpowers ────────────────────────────────────────────────────
+    {
+      name: 'ai',
+      testDir: './aut/tests/ai',
+      timeout: AI_TIMEOUT,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.UI_BASE_URL,
+        viewport: { width: 1280, height: 720 },
+        actionTimeout:     AI_TIMEOUT,
+        navigationTimeout: AI_TIMEOUT,
+        launchOptions: {
+          args: ['--no-sandbox', '--disable-dev-shm-usage'],
+        },
       },
     },
   ],

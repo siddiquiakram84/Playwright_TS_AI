@@ -59,7 +59,7 @@ banner() {
   echo '  ║          Just A Rather Very Intelligent System                ║'
   echo '  ║                                                               ║'
   echo '  ║    Playwright  ·  TypeScript  ·  Allure  ·  Grafana          ║'
-  echo '  ║    InfluxDB  ·  Docker  ·  GitHub Actions                    ║'
+  echo '  ║    InfluxDB  ·  Docker  ·  GitHub Actions  ·  GenAI v5      ║'
   echo '  ║                                                               ║'
   echo '  ╚═══════════════════════════════════════════════════════════════╝'
   echo -e "${RESET}"
@@ -109,6 +109,15 @@ show_menu() {
   echo -e "  ${WHITE}${BOLD}── UTILITIES ────────────────────────────────────────────────────${RESET}"
   echo -e "  ${CYAN}[23]${RESET} TypeScript type check"
   echo -e "  ${CYAN}[24]${RESET} Clean all artifacts         ${DIM}(allure-results, reports, logs)${RESET}"
+  echo ""
+  echo -e "  ${WHITE}${BOLD}── GenAI SUPERPOWERS ✦ ──────────────────────────────────────────${RESET}"
+  echo -e "  ${CYAN}[30]${RESET} Run AI demo tests           ${DIM}(self-healing · visual · data)${RESET}"
+  echo -e "  ${CYAN}[31]${RESET} Generate tests from user story ${DIM}(multi-agent pipeline)${RESET}"
+  echo -e "  ${CYAN}[32]${RESET} Generate tests from natural language ${DIM}(\"test the checkout flow\")${RESET}"
+  echo -e "  ${CYAN}[33]${RESET} Generate AI test data       ${DIM}(users · products · search terms)${RESET}"
+  echo -e "  ${CYAN}[34]${RESET} Capture visual baselines    ${DIM}(establishes regression reference)${RESET}"
+  echo -e "  ${CYAN}[35]${RESET} 🎬 Real-time Test Recorder  ${DIM}(record actions → AI generates spec)${RESET}"
+  echo -e "  ${CYAN}[36]${RESET} 🤖 Start AI Ops Dashboard   ${DIM}(live LLM feed · admin → :9093)${RESET}"
   echo ""
   echo -e "  ${RED}[0]${RESET}  Exit"
   divider
@@ -506,6 +515,90 @@ main() {
       29)
         run_browser_cmd "Run UI tests – all browsers" \
           --project=ui --project=ui-firefox --project=ui-webkit --project=ui-edge
+        ;;
+
+      # ── GenAI Superpowers ────────────────────────────────────────────────────
+      30)
+        run_browser_cmd "GenAI: Run AI demo tests" --project=ai
+        ;;
+      31)
+        echo -ne "  ${YELLOW}?${RESET}  Enter user story (or press Enter for default): "
+        read -r _story </dev/tty
+        [[ -z "$_story" ]] && _story="As a user I want to search for products and add them to the cart"
+        echo -ne "  ${YELLOW}?${RESET}  Output file path (or press Enter to print only): "
+        read -r _out </dev/tty
+        if [[ -n "$_out" ]]; then
+          run_cmd "GenAI: Generate spec from user story" \
+            npx tsx core/scripts/generate-tests.ts --story "$_story" --output "$_out"
+        else
+          run_cmd "GenAI: Generate spec from user story" \
+            npx tsx core/scripts/generate-tests.ts --story "$_story"
+        fi
+        ;;
+      32)
+        echo -ne "  ${YELLOW}?${RESET}  Enter instruction (e.g. 'test the checkout flow'): "
+        read -r _nl </dev/tty
+        [[ -z "$_nl" ]] && _nl="test the product search and filter functionality"
+        echo -ne "  ${YELLOW}?${RESET}  Output file path (or press Enter to print only): "
+        read -r _out </dev/tty
+        if [[ -n "$_out" ]]; then
+          run_cmd "GenAI: Generate spec from natural language" \
+            npx tsx core/scripts/generate-tests.ts --nl "$_nl" --output "$_out"
+        else
+          run_cmd "GenAI: Generate spec from natural language" \
+            npx tsx core/scripts/generate-tests.ts --nl "$_nl"
+        fi
+        ;;
+      33)
+        echo -ne "  ${YELLOW}?${RESET}  Data type — user / product / searchTerms [user]: "
+        read -r _dtype </dev/tty
+        [[ -z "$_dtype" ]] && _dtype="user"
+        echo -ne "  ${YELLOW}?${RESET}  Count [1]: "
+        read -r _count </dev/tty
+        [[ -z "$_count" ]] && _count="1"
+        echo -ne "  ${YELLOW}?${RESET}  Output file (or press Enter to print): "
+        read -r _out </dev/tty
+        if [[ -n "$_out" ]]; then
+          run_cmd "GenAI: Generate test data (${_dtype} × ${_count})" \
+            npx tsx core/scripts/generate-test-data.ts --type "$_dtype" --count "$_count" --output "$_out"
+        else
+          run_cmd "GenAI: Generate test data (${_dtype} × ${_count})" \
+            npx tsx core/scripts/generate-test-data.ts --type "$_dtype" --count "$_count"
+        fi
+        ;;
+      34)
+        info "Capturing visual baselines — navigating to key pages and storing reference screenshots"
+        run_browser_cmd "GenAI: Capture visual baselines" \
+          --project=ai -g "baseline"
+        ;;
+      35)
+        echo -ne "  ${YELLOW}?${RESET}  Starting URL (Enter for default site): "
+        read -r _recurl </dev/tty
+        echo -ne "  ${YELLOW}?${RESET}  Output spec path (Enter to print only): "
+        read -r _recout </dev/tty
+        echo ""
+        section "AI Test Recorder"
+        info "Browser will open. Perform your test steps, then press ${BOLD}Enter${RESET} in this terminal."
+        echo ""
+        if [[ -n "$_recout" ]]; then
+          npx tsx core/scripts/record-test.ts \
+            ${_recurl:+--url "$_recurl"} \
+            --output "$_recout"
+        else
+          npx tsx core/scripts/record-test.ts \
+            ${_recurl:+--url "$_recurl"}
+        fi
+        echo ""
+        read -rp "  Press [Enter] to continue..."
+        ;;
+      36)
+        section "AI Ops Dashboard"
+        info "Starting AI Ops server on ${CYAN}http://localhost:9093${RESET}"
+        info "Admin panel — default password: ${BOLD}changeme${RESET} (set ADMIN_SECRET in .env)"
+        info "Press Ctrl+C to stop."
+        echo ""
+        open_url "http://localhost:9093" &
+        npx tsx dashboard/ai-ops/server.ts
         ;;
 
       0)
