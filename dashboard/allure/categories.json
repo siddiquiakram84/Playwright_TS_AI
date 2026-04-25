@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Product Defects",
+    "messageRegex": ".*AssertionError.*|.*expect.*received.*|.*toHave.*|.*toBe.*",
+    "matchedStatuses": ["failed"]
+  },
+  {
+    "name": "Timeout Failures",
+    "messageRegex": ".*TimeoutError.*|.*Timeout.*exceeded.*|.*waiting for.*",
+    "matchedStatuses": ["broken"]
+  },
+  {
+    "name": "Network / Connectivity",
+    "messageRegex": ".*net::ERR.*|.*ECONNREFUSED.*|.*ENOTFOUND.*|.*fetch failed.*",
+    "matchedStatuses": ["broken"]
+  },
+  {
+    "name": "Element Not Found",
+    "messageRegex": ".*strict mode violation.*|.*locator.*resolved to.*|.*no element.*",
+    "matchedStatuses": ["broken"]
+  },
+  {
+    "name": "Flaky / Skipped",
+    "matchedStatuses": ["skipped"],
+    "flaky": true
+  }
+]

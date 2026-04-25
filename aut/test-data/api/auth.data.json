@@ -1,0 +1,26 @@
+{
+  "invalidCredentials": [
+    {
+      "scenario": "wrong password",
+      "username": "johnd",
+      "password": "WRONG_PASS_123",
+      "expectedStatus": 400
+    },
+    {
+      "scenario": "non-existent username",
+      "username": "user_does_not_exist_xyz",
+      "password": "anypassword",
+      "expectedStatus": 400
+    },
+    {
+      "scenario": "empty username",
+      "username": "",
+      "password": "m38rmF$",
+      "expectedStatus": 400
+    }
+  ],
+  "tokenConstraints": {
+    "minLength": 10,
+    "type": "string"
+  }
+}

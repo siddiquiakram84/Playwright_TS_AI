@@ -1,0 +1,31 @@
+{
+  "validIds": [1, 2, 3],
+  "invalidIds": [0, -1, 99999],
+  "totalCartCount": 7,
+  "create": {
+    "userId": 1,
+    "date": "2024-01-15",
+    "products": [
+      { "productId": 1, "quantity": 2 },
+      { "productId": 3, "quantity": 1 }
+    ]
+  },
+  "update": {
+    "full": {
+      "userId": 2,
+      "date": "2024-06-01",
+      "products": [
+        { "productId": 5, "quantity": 3 }
+      ]
+    },
+    "partial": {
+      "products": [
+        { "productId": 2, "quantity": 1 }
+      ]
+    }
+  },
+  "dateConstraints": {
+    "format": "YYYY-MM-DD",
+    "regex": "^\\d{4}-\\d{2}-\\d{2}"
+  }
+}

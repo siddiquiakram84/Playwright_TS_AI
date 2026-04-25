@@ -1,0 +1,34 @@
+{
+  "validIds": [1, 2, 3, 5, 10],
+  "invalidIds": [0, -1, 99999],
+  "categories": ["electronics", "jewelery", "men's clothing", "women's clothing"],
+  "expectedCategoryCount": 4,
+  "totalProductCount": 20,
+  "create": {
+    "title": "Automation Test Product",
+    "price": 49.99,
+    "description": "Created by automated test suite — safe to ignore",
+    "image": "https://fakestoreapi.com/img/81fAn1SL4fL._AC_SX679_.jpg",
+    "category": "electronics"
+  },
+  "update": {
+    "full": {
+      "title": "Fully Updated Product",
+      "price": 79.99,
+      "description": "PUT updated by automation",
+      "image": "https://fakestoreapi.com/img/81fAn1SL4fL._AC_SX679_.jpg",
+      "category": "jewelery"
+    },
+    "partial": {
+      "price": 29.99
+    }
+  },
+  "priceBoundaries": {
+    "min": 0,
+    "max": 10000
+  },
+  "ratingBoundaries": {
+    "min": 0,
+    "max": 5
+  }
+}

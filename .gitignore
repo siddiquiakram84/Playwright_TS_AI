@@ -79,3 +79,6 @@ docker-compose.override.yml
 # JARVIS runtime history
 dashboard/jarvis/metrics-history.json
 /allure-results/
+
+# Vector memory index (generated — do not commit large binary embeddings)
+core/ai/memory/.index/

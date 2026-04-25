@@ -1,0 +1,38 @@
+{
+  "validIds": [1, 2, 3],
+  "invalidIds": [0, -1, 99999],
+  "totalUserCount": 10,
+  "create": {
+    "email": "automation.test@example.com",
+    "username": "auto_test_user",
+    "password": "AutoTest@789",
+    "name": { "firstname": "Auto", "lastname": "Tester" },
+    "address": {
+      "city": "London",
+      "street": "1 Automation Lane",
+      "number": 42,
+      "zipcode": "EC1A-1BB",
+      "geolocation": { "lat": "51.5074", "long": "-0.1278" }
+    },
+    "phone": "+44-20-1234-5678"
+  },
+  "update": {
+    "full": {
+      "email": "updated.auto@example.com",
+      "username": "auto_test_user_v2",
+      "password": "UpdatedPass@456",
+      "name": { "firstname": "Updated", "lastname": "Tester" },
+      "address": {
+        "city": "Manchester",
+        "street": "99 New Road",
+        "number": 7,
+        "zipcode": "M1-2AB"
+      },
+      "phone": "+44-161-999-0000"
+    },
+    "partial": {
+      "email": "partial.update@example.com"
+    }
+  },
+  "expectedEmailFormat": ".+@.+\\..+"
+}

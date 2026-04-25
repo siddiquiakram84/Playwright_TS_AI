@@ -1,25 +1,93 @@
-name: E2E Automation CI
+# ─────────────────────────────────────────────────────────────────────────────
+# E2E Automation CI/CD Pipeline
+#
+# Stages:
+#   1. typecheck   — TypeScript gate; fails fast before any browser spins up
+#   2. test-api    — REST API contract tests (no browser required)
+#   3. test-ui     — Chromium E2E tests, 3-way sharded for parallel speed
+#   4. test-hybrid — API + UI combined flows
+#   5. allure      — Merge results → restore history → generate → deploy Pages
+#
+# SDET highlights:
+#   ◉ Concurrency groups   cancel stale in-progress runs on same branch/PR
+#   ◉ Playwright cache     keyed by version — skips 150 MB download per shard
+#   ◉ Allure history       fetched from gh-pages so trend charts always render
+#   ◉ Failure categories   auto-bucket broken/failed tests in Allure UI
+#   ◉ Environment props    CI context (branch, commit, run URL) in report header
+#   ◉ PR comment           sticky pass/fail table updated on every run
+#   ◉ Job summary          rich markdown table in the Actions run UI
+#   ◉ Manual dispatch      choose project (ui|api|hybrid|all) and environment
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI — E2E Automation Suite
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
   workflow_dispatch:
     inputs:
       project:
-        description: 'Test project to run (ui | api | hybrid | all)'
+        description: 'Test suite to run'
         required: false
         default: 'all'
+        type: choice
+        options: [all, ui, api, hybrid]
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'test'
+        type: choice
+        options: [test, staging]
+
+# Cancel any in-progress run for the same branch/PR — saves CI minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '20'
-  ALLURE_VERSION: '2.30.0'
+  # Pinned to match devDependencies — used as the Playwright browser cache key.
+  PLAYWRIGHT_VERSION: '1.49.0'
+  TEST_ENV: ${{ inputs.environment || 'test' }}
+
+# ── Shared env block injected into every test job ────────────────────────────
+# Defined once here, referenced via ${{ env.* }} in each job's steps.
+# Secrets are never echoed; only the variable names appear in logs.
 
 jobs:
-  test-api:
-    name: API Tests
+  # ── 1. TypeScript compile gate ────────────────────────────────────────────
+  typecheck:
+    name: ✅ Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript compile check
+        run: npm run type-check
+
+  # ── 2. API Tests ──────────────────────────────────────────────────────────
+  test-api:
+    name: 🔌 API Tests
+    runs-on: ubuntu-latest
+    needs: typecheck
+    # Skip this suite when a specific non-API project is requested via dispatch.
+    if: >
+      always() &&
+      needs.typecheck.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.project == 'all' ||
+       inputs.project == 'api')
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -35,29 +103,40 @@ jobs:
       - name: Run API tests
         run: npx playwright test --project=api
         env:
-          ENV: test
+          CI: 'true'
+          ENV: ${{ env.TEST_ENV }}
           UI_BASE_URL: https://automationexercise.com
           API_BASE_URL: https://fakestoreapi.com
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          DEFAULT_TIMEOUT: 30000
-          API_TIMEOUT: 15000
+          DEFAULT_TIMEOUT: '30000'
+          API_TIMEOUT: '15000'
           ALLURE_RESULTS_DIR: dashboard/allure/results
 
-      - name: Upload API test results
+      - name: Upload API allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: api-test-results
-          path: |
-            dashboard/allure/results/
-            dashboard/playwright/report/
-          retention-days: 14
+          name: allure-results-api
+          path: dashboard/allure/results/
+          retention-days: 3
 
+  # ── 3. UI Tests — 3-way parallel shards ──────────────────────────────────
   test-ui:
-    name: UI Tests
+    name: 🌐 UI Tests (Shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    needs: typecheck
+    if: >
+      always() &&
+      needs.typecheck.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.project == 'all' ||
+       inputs.project == 'ui')
     timeout-minutes: 30
+    strategy:
+      fail-fast: false   # keep remaining shards running even if one shard fails
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
 
@@ -69,36 +148,64 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      # Browser binaries are ~150 MB; cache them by Playwright version so
+      # subsequent runs on the same runner pool skip the download entirely.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ env.PLAYWRIGHT_VERSION }}-chromium-${{ runner.os }}
 
-      - name: Run UI tests
-        run: npx playwright test --project=ui
+      - name: Install Playwright + browsers (cache miss)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install browser OS dependencies (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run UI tests — shard ${{ matrix.shard }}/3
+        run: npx playwright test --project=ui --shard=${{ matrix.shard }}/3
         env:
-          ENV: test
+          CI: 'true'
+          ENV: ${{ env.TEST_ENV }}
           UI_BASE_URL: https://automationexercise.com
           API_BASE_URL: https://fakestoreapi.com
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          DEFAULT_TIMEOUT: 30000
-          API_TIMEOUT: 15000
+          DEFAULT_TIMEOUT: '30000'
+          API_TIMEOUT: '15000'
           ALLURE_RESULTS_DIR: dashboard/allure/results
 
-      - name: Upload UI test results
+      - name: Upload allure results (shard ${{ matrix.shard }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-test-results
-          path: |
-            dashboard/allure/results/
-            dashboard/playwright/report/
-            dashboard/playwright/test-results/
-          retention-days: 14
+          name: allure-results-ui-${{ matrix.shard }}
+          path: dashboard/allure/results/
+          retention-days: 3
 
+      # Playwright traces and screenshots are only useful when tests fail.
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-ui-${{ matrix.shard }}
+          path: dashboard/playwright/test-results/
+          retention-days: 7
+
+  # ── 4. Hybrid Tests ───────────────────────────────────────────────────────
   test-hybrid:
-    name: Hybrid Tests
+    name: 🔀 Hybrid Tests
     runs-on: ubuntu-latest
-    needs: [test-api, test-ui]
+    needs: typecheck
+    if: >
+      always() &&
+      needs.typecheck.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.project == 'all' ||
+       inputs.project == 'hybrid')
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -111,66 +218,280 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ env.PLAYWRIGHT_VERSION }}-chromium-${{ runner.os }}
 
-      - name: Run hybrid tests
+      - name: Install Playwright + browsers (cache miss)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install browser OS dependencies (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run Hybrid tests
         run: npx playwright test --project=hybrid
         env:
-          ENV: test
+          CI: 'true'
+          ENV: ${{ env.TEST_ENV }}
           UI_BASE_URL: https://automationexercise.com
           API_BASE_URL: https://fakestoreapi.com
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          DEFAULT_TIMEOUT: 30000
-          API_TIMEOUT: 15000
+          DEFAULT_TIMEOUT: '30000'
+          API_TIMEOUT: '15000'
           ALLURE_RESULTS_DIR: dashboard/allure/results
 
-      - name: Upload hybrid test results
+      - name: Upload Hybrid allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hybrid-test-results
-          path: |
-            dashboard/allure/results/
-            dashboard/playwright/report/
-          retention-days: 14
+          name: allure-results-hybrid
+          path: dashboard/allure/results/
+          retention-days: 3
 
+  # ── 5. Allure Report — merge, generate, deploy ────────────────────────────
   allure-report:
-    name: Publish Allure Report
+    name: 📊 Allure Report + Deploy
     runs-on: ubuntu-latest
     needs: [test-api, test-ui, test-hybrid]
     if: always()
+    permissions:
+      contents: write       # push to gh-pages branch
+      pull-requests: write  # post sticky PR comment
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all test artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          path: artifacts/
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Merge allure results
+      - name: Install dependencies
+        run: npm ci
+
+      # Download every allure-results-* artifact from the test jobs into a
+      # single flat directory. continue-on-error handles the case where a
+      # job was skipped and produced no artifact (e.g. selective dispatch).
+      - name: Download all allure results
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: allure-results-*
+          path: dashboard/allure/results/
+          merge-multiple: true
+
+      - name: Count merged results
+        run: |
+          COUNT=$(find dashboard/allure/results/ -maxdepth 1 -name "*.json" 2>/dev/null | wc -l)
+          echo "📁 ${COUNT} Allure result files merged"
+
+      # ── Environment properties ─────────────────────────────────────────────
+      # These appear in the Allure report header under "Environment".
+      - name: Write environment.properties
         run: |
           mkdir -p dashboard/allure/results
-          find artifacts/ -name '*.json' -path '*/allure/results/*' -exec cp {} dashboard/allure/results/ \;
+          NODE_VER=$(node --version)
+          PW_VER=$(npx playwright --version 2>/dev/null || echo "unknown")
+          cat > dashboard/allure/results/environment.properties << EOF
+          Browser=Chromium
+          Environment=${{ env.TEST_ENV }}
+          Node.js=${NODE_VER}
+          Playwright=${PW_VER}
+          Branch=${{ github.ref_name }}
+          Commit=${{ github.sha }}
+          Run.URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+
+      # ── Failure categories ─────────────────────────────────────────────────
+      # Allure reads categories.json from the results directory to automatically
+      # bucket failures — makes triage 10x faster in large suites.
+      - name: Write categories.json
+        run: |
+          cat > dashboard/allure/results/categories.json << 'EOF'
+          [
+            {
+              "name": "Product Defects",
+              "messageRegex": ".*AssertionError.*|.*expect.*received.*|.*toHave.*|.*toBe.*",
+              "matchedStatuses": ["failed"]
+            },
+            {
+              "name": "Timeout Failures",
+              "messageRegex": ".*TimeoutError.*|.*Timeout.*exceeded.*|.*waiting for.*",
+              "matchedStatuses": ["broken"]
+            },
+            {
+              "name": "Network / Connectivity",
+              "messageRegex": ".*net::ERR.*|.*ECONNREFUSED.*|.*ENOTFOUND.*|.*fetch failed.*",
+              "matchedStatuses": ["broken"]
+            },
+            {
+              "name": "Element Not Found",
+              "messageRegex": ".*strict mode violation.*|.*locator.*resolved to.*|.*no element.*",
+              "matchedStatuses": ["broken"]
+            },
+            {
+              "name": "Flaky / Skipped",
+              "matchedStatuses": ["skipped"],
+              "flaky": true
+            }
+          ]
+          EOF
+
+      # ── Restore Allure history ─────────────────────────────────────────────
+      # The history/ folder from the previous report is what populates Allure's
+      # trend charts (retries, duration, pass-rate over time). Without this
+      # restore step every run appears as the first run — no trends.
+      #
+      # Strategy: checkout gh-pages branch (where the last report lives),
+      # copy its history/ into the results directory, then generate normally.
+      # The new history/ in the generated report will be committed back to
+      # gh-pages by the deploy step, completing the loop.
+      - name: Checkout gh-pages for Allure history
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages-prev
+
+      - name: Restore previous Allure history
+        continue-on-error: true
+        run: |
+          if [ -d "gh-pages-prev/history" ]; then
+            cp -r gh-pages-prev/history dashboard/allure/results/history
+            echo "✅ Allure history restored — trend charts will render"
+          else
+            echo "ℹ️  No gh-pages history found (first deployment or branch missing)"
+          fi
+
+      # ── Generate Allure report ─────────────────────────────────────────────
+      - name: Install Allure CLI
+        run: npm install -g allure-commandline@2.30.0
 
       - name: Generate Allure report
-        uses: simple-elf/allure-report-action@v1.9
-        with:
-          allure_results: dashboard/allure/results
-          allure_report: dashboard/allure/report
-          allure_history: allure-history
+        run: allure generate dashboard/allure/results --clean -o dashboard/allure/report
 
-      - name: Upload Allure report
+      # ── Parse test statistics ──────────────────────────────────────────────
+      # widgets/summary.json is written by allure generate and contains the
+      # definitive pass/fail/broken/skipped counts plus total duration.
+      - name: Parse test summary
+        id: stats
+        run: |
+          SUMMARY="dashboard/allure/report/widgets/summary.json"
+          if [ -f "$SUMMARY" ]; then
+            PASSED=$(jq  '.statistic.passed'  "$SUMMARY")
+            FAILED=$(jq  '.statistic.failed'  "$SUMMARY")
+            BROKEN=$(jq  '.statistic.broken'  "$SUMMARY")
+            SKIPPED=$(jq '.statistic.skipped' "$SUMMARY")
+            TOTAL=$(jq   '.statistic.total'   "$SUMMARY")
+            DURATION_MS=$(jq '.time.duration // 0' "$SUMMARY")
+            DURATION_S=$(awk "BEGIN {printf \"%.1f\", $DURATION_MS/1000}")
+          else
+            PASSED=0; FAILED=0; BROKEN=0; SKIPPED=0; TOTAL=0; DURATION_S=0
+          fi
+          if [ "${FAILED:-0}" -gt 0 ] || [ "${BROKEN:-0}" -gt 0 ]; then
+            STATUS="❌ FAILED"
+          else
+            STATUS="✅ PASSED"
+          fi
+          echo "passed=${PASSED}"     >> "$GITHUB_OUTPUT"
+          echo "failed=${FAILED}"     >> "$GITHUB_OUTPUT"
+          echo "broken=${BROKEN}"     >> "$GITHUB_OUTPUT"
+          echo "skipped=${SKIPPED}"   >> "$GITHUB_OUTPUT"
+          echo "total=${TOTAL}"       >> "$GITHUB_OUTPUT"
+          echo "duration=${DURATION_S}" >> "$GITHUB_OUTPUT"
+          echo "status=${STATUS}"     >> "$GITHUB_OUTPUT"
+
+      # ── GitHub Actions Job Summary ─────────────────────────────────────────
+      # Visible in the Actions run UI under "Summary" — zero clicks to see results.
+      - name: Write job summary
+        if: always()
+        env:
+          PASSED:   ${{ steps.stats.outputs.passed }}
+          FAILED:   ${{ steps.stats.outputs.failed }}
+          BROKEN:   ${{ steps.stats.outputs.broken }}
+          SKIPPED:  ${{ steps.stats.outputs.skipped }}
+          TOTAL:    ${{ steps.stats.outputs.total }}
+          DURATION: ${{ steps.stats.outputs.duration }}
+          STATUS:   ${{ steps.stats.outputs.status }}
+          API_RES:  ${{ needs.test-api.result }}
+          UI_RES:   ${{ needs.test-ui.result }}
+          HYB_RES:  ${{ needs.test-hybrid.result }}
+        run: |
+          {
+            echo "## 📊 E2E Automation Results — ${STATUS}"
+            echo ""
+            echo "| ✅ Passed | ❌ Failed | 💥 Broken | ⏭ Skipped | 🔢 Total | ⏱ Duration |"
+            echo "|:---------:|:---------:|:---------:|:---------:|:--------:|:----------:|"
+            echo "| ${PASSED} | ${FAILED} | ${BROKEN} | ${SKIPPED} | ${TOTAL} | ${DURATION}s |"
+            echo ""
+            echo "| Suite | Result |"
+            echo "|-------|--------|"
+            echo "| 🔌 API Tests   | \`${API_RES}\`  |"
+            echo "| 🌐 UI Tests    | \`${UI_RES}\`   |"
+            echo "| 🔀 Hybrid Tests| \`${HYB_RES}\`  |"
+            echo ""
+            echo "> **Branch:** \`${{ github.ref_name }}\` · **Commit:** \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Append report link only when a Pages deployment will follow.
+          REF="${{ github.ref }}"
+          if [ "$REF" = "refs/heads/master" ] || [ "$REF" = "refs/heads/main" ]; then
+            OWNER="${{ github.repository_owner }}"
+            REPO="${{ github.event.repository.name }}"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "📈 **[View Allure Report](https://${OWNER}.github.io/${REPO}/)**" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # ── Sticky PR comment ──────────────────────────────────────────────────
+      # Uses marocchino/sticky-pull-request-comment: same comment is updated
+      # on every push to the PR — no comment spam, always current result.
+      - name: Post sticky PR comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: e2e-allure-report
+          message: |
+            ## ${{ steps.stats.outputs.status }} — E2E Test Results
+
+            | ✅ Passed | ❌ Failed | 💥 Broken | ⏭ Skipped | 🔢 Total | ⏱ Duration |
+            |:---------:|:---------:|:---------:|:---------:|:--------:|:----------:|
+            | ${{ steps.stats.outputs.passed }} | ${{ steps.stats.outputs.failed }} | ${{ steps.stats.outputs.broken }} | ${{ steps.stats.outputs.skipped }} | ${{ steps.stats.outputs.total }} | ${{ steps.stats.outputs.duration }}s |
+
+            | Suite | Result |
+            |-------|--------|
+            | 🔌 API Tests    | `${{ needs.test-api.result }}`    |
+            | 🌐 UI Tests     | `${{ needs.test-ui.result }}`     |
+            | 🔀 Hybrid Tests | `${{ needs.test-hybrid.result }}` |
+
+            > 🔗 [View run #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      # ── Upload final report as artifact ───────────────────────────────────
+      - name: Upload Allure report artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: dashboard/allure/report/
           retention-days: 30
 
+      # ── Deploy to GitHub Pages ─────────────────────────────────────────────
+      # Publishes on every push to master/main; not on PRs or feature branches.
+      # peaceiris/actions-gh-pages commits the new report to the gh-pages branch,
+      # which becomes the "previous history" source on the next run.
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
+        if: >
+          always() &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dashboard/allure/report
+          keep_files: false
+          commit_message: "ci: Allure report — run #${{ github.run_number }} (${{ github.sha }})"

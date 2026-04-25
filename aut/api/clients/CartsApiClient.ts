@@ -21,6 +21,10 @@ export class CartsApiClient extends BaseApiClient {
     return this.get<Cart[]>(`/carts/user/${userId}`);
   }
 
+  async getByDateRange(startdate: string, enddate: string): Promise<Cart[]> {
+    return this.get<Cart[]>('/carts', { params: { startdate, enddate } });
+  }
+
   async create(payload: CreateCartPayload): Promise<Cart> {
     return this.post<Cart>('/carts', payload);
   }

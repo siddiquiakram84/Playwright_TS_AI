@@ -1,0 +1,79 @@
+{
+  "_meta": {
+    "schema": "manual-test-case/v1",
+    "description": "Manual test cases for the checkout end-to-end flow",
+    "author": "QA Lead",
+    "lastUpdated": "2026-04-25",
+    "converter": "npm run ai:convert-tests -- --input aut/test-data/manual-test-cases/checkout-e2e.tc.json"
+  },
+  "suite": "Checkout — End-to-End Flow",
+  "epic": "E-Commerce Core",
+  "feature": "Checkout",
+  "baseUrl": "{{ENV.uiBaseUrl}}",
+  "testCases": [
+    {
+      "id": "TC-CHK-001",
+      "title": "Guest user cannot proceed to checkout without login",
+      "severity": "critical",
+      "tags": ["checkout", "auth", "negative"],
+      "preconditions": "User is not logged in",
+      "steps": [
+        { "action": "navigate", "target": "/view_cart",   "description": "Go to cart page" },
+        { "action": "click",    "target": "Proceed To Checkout button" },
+        { "action": "assert",   "type": "url",  "expected": "/login", "description": "Redirected to login" }
+      ],
+      "expectedResult": "User is redirected to the login page",
+      "testData": [
+        { "label": "anonymous user", "email": null, "password": null }
+      ]
+    },
+    {
+      "id": "TC-CHK-002",
+      "title": "Authenticated user can complete checkout with valid card data",
+      "severity": "critical",
+      "tags": ["checkout", "happy-path", "smoke"],
+      "preconditions": "User is logged in and has item in cart",
+      "steps": [
+        { "action": "login",    "data": "{{ENV.uiUserEmail}}:{{ENV.uiUserPassword}}" },
+        { "action": "navigate", "target": "/products" },
+        { "action": "click",    "target": "Add to cart (first product)" },
+        { "action": "navigate", "target": "/view_cart" },
+        { "action": "click",    "target": "Proceed To Checkout" },
+        { "action": "click",    "target": "Place Order" },
+        { "action": "fill",     "target": "card fields", "data": "{{testData.card}}" },
+        { "action": "click",    "target": "Pay and Confirm Order" },
+        { "action": "assert",   "type": "text", "expected": "ORDER PLACED!", "description": "Order confirmation shown" }
+      ],
+      "expectedResult": "Order placed successfully with confirmation message",
+      "testData": [
+        {
+          "label": "Visa card",
+          "card": {
+            "nameOnCard": "Test User",
+            "number": "4111111111111111",
+            "cvc": "123",
+            "expiryMonth": "12",
+            "expiryYear": "2028"
+          }
+        }
+      ]
+    },
+    {
+      "id": "TC-CHK-003",
+      "title": "Checkout validates required address fields",
+      "severity": "high",
+      "tags": ["checkout", "validation", "negative"],
+      "preconditions": "User is logged in",
+      "steps": [
+        { "action": "login",    "data": "{{ENV.uiUserEmail}}:{{ENV.uiUserPassword}}" },
+        { "action": "navigate", "target": "/view_cart" },
+        { "action": "click",    "target": "Proceed To Checkout" },
+        { "action": "assert",   "type": "visible", "target": "Delivery Address section" }
+      ],
+      "expectedResult": "Address section is pre-populated from user profile",
+      "testData": [
+        { "label": "registered user" }
+      ]
+    }
+  ]
+}

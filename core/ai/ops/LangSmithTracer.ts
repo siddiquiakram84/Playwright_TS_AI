@@ -1,100 +1,153 @@
 /**
- * Optional LangSmith tracing integration.
+ * LangSmith tracing — records every LLM call as a run visible at smith.langchain.com.
  *
- * Activated when ALL three env vars are set:
+ * Activated when ALL three env vars are present:
  *   LANGCHAIN_TRACING_V2=true
- *   LANGCHAIN_API_KEY=<your-langsmith-key>
- *   LANGCHAIN_PROJECT=playwright-ai-framework   (or any name you choose)
+ *   LANGCHAIN_API_KEY=<your key>
+ *   LANGCHAIN_PROJECT=<project name>
  *
- * If not configured, every method is a no-op — zero overhead.
- * Sign up: https://smith.langchain.com
+ * When not configured every method is a no-op — zero overhead.
+ *
+ * Usage in AIClient:
+ *   langSmithTracer.startRun(id, { name, inputs, tags });   // before LLM call
+ *   langSmithTracer.endRun(id, { output, usage, error });   // after LLM call
  */
 
-import { logger } from '../../utils/logger';
+import * as crypto from 'crypto';
+import { logger }  from '../../utils/logger';
 
-interface TraceInput {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface StartRunParams {
+  /** Human-readable name shown in Smith (e.g. "heal", "datagen"). */
   name:      string;
-  runType:   'llm' | 'chain' | 'tool';
-  inputs:    Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  /** LLM messages sent to the model. */
+  inputs: {
+    messages: Array<{ role: string; content: string }>;
+    provider?: string;
+    model?:    string;
+  };
+  tags?: string[];
 }
 
-interface TraceOutput {
-  outputs:     Record<string, unknown>;
-  inputTokens?:  number;
-  outputTokens?: number;
-  error?:      string;
+export interface EndRunParams {
+  /** Raw text output from the model. */
+  output:  string;
+  /** Actual token counts — shown in Smith's usage panel. */
+  usage?: {
+    inputTokens:    number;
+    outputTokens:   number;
+    cacheHitTokens: number;
+  };
+  /** Non-null only when the call failed. */
+  error?: string;
 }
 
-let traceable: ((fn: (...args: unknown[]) => unknown, config: object) => (...args: unknown[]) => unknown) | null = null;
-let Client: (new (opts: { apiKey: string }) => object) | null = null;
-
-async function loadLangSmith(): Promise<boolean> {
-  if (!process.env.LANGCHAIN_TRACING_V2 || !process.env.LANGCHAIN_API_KEY) return false;
-  try {
-    const ls = await import('langsmith/traceable');
-    traceable = ls.traceable as typeof traceable;
-    const lsClient = await import('langsmith');
-    Client = lsClient.Client as typeof Client;
-    logger.info('[LangSmith] Tracing enabled → project: ' + (process.env.LANGCHAIN_PROJECT ?? 'default'));
-    return true;
-  } catch {
-    logger.warn('[LangSmith] langsmith package not available — tracing disabled');
-    return false;
-  }
-}
-
-let _loaded: Promise<boolean> | null = null;
+// ── Singleton tracer ──────────────────────────────────────────────────────────
 
 class LangSmithTracer {
   private static _instance: LangSmithTracer;
-  private enabled = false;
+
+  private enabled  = false;
+  private project  = 'playwright-ai-framework';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private client: any = null;
+
+  /** eventBus call-id  →  LangSmith UUID */
+  private readonly pending = new Map<string, string>();
 
   static getInstance(): LangSmithTracer {
     if (!LangSmithTracer._instance) LangSmithTracer._instance = new LangSmithTracer();
     return LangSmithTracer._instance;
   }
 
+  // ── Init ───────────────────────────────────────────────────────────────────
+
   async init(): Promise<void> {
-    if (_loaded) { this.enabled = await _loaded; return; }
-    _loaded = loadLangSmith();
-    this.enabled = await _loaded;
+    if (this.client) return; // already initialised
+
+    const tracing = process.env.LANGCHAIN_TRACING_V2;
+    const apiKey  = process.env.LANGCHAIN_API_KEY;
+
+    if (tracing !== 'true' || !apiKey) {
+      logger.debug('[LangSmith] Tracing disabled (LANGCHAIN_TRACING_V2 or LANGCHAIN_API_KEY not set)');
+      return;
+    }
+
+    try {
+      const { Client } = await import('langsmith');
+      this.client  = new Client({ apiKey });
+      this.project = process.env.LANGCHAIN_PROJECT ?? 'playwright-ai-framework';
+      this.enabled = true;
+      logger.info(`[LangSmith] ✓ Tracing enabled → project: "${this.project}" (smith.langchain.com)`);
+    } catch (err) {
+      logger.warn('[LangSmith] Failed to load SDK — tracing disabled: ' + (err as Error).message);
+    }
   }
 
-  isEnabled(): boolean {
-    return this.enabled;
-  }
+  isEnabled(): boolean { return this.enabled; }
+  getProject(): string { return this.project; }
+
+  // ── Public API ─────────────────────────────────────────────────────────────
 
   /**
-   * Wrap an async function with a LangSmith trace span.
-   * When tracing is disabled the original function runs unchanged.
+   * Fire-and-forget: open a LangSmith run BEFORE the LLM call.
+   * Uses the same `id` the event bus already tracks, mapped to a proper UUID.
    */
-  wrap<T extends (...args: Parameters<T>) => Promise<ReturnType<T>>>(
-    name: string,
-    runType: TraceInput['runType'],
-    fn: T,
-    metadata?: Record<string, unknown>,
-  ): T {
-    if (!this.enabled || !traceable) return fn;
-
-    return traceable(fn as unknown as (...args: unknown[]) => unknown, {
-      name,
-      run_type: runType,
-      metadata: metadata ?? {},
-    }) as unknown as T;
-  }
-
-  /**
-   * Manually record a single LLM call span with inputs + outputs.
-   */
-  async recordLLMCall(trace: TraceInput, output: TraceOutput): Promise<void> {
+  startRun(eventBusId: string, params: StartRunParams): void {
     if (!this.enabled) return;
 
-    logger.debug(
-      `[LangSmith] Traced "${trace.name}" ` +
-      `in=${output.inputTokens ?? '?'} out=${output.outputTokens ?? '?'} ` +
-      `${output.error ? '❌' : '✅'}`,
-    );
+    const lsId = crypto.randomUUID();
+    this.pending.set(eventBusId, lsId);
+
+    this.client.createRun({
+      id:           lsId,
+      name:         params.name,
+      run_type:     'llm',
+      inputs:       { messages: params.inputs.messages },
+      project_name: this.project,
+      tags:         params.tags ?? [],
+      start_time:   Date.now(),
+      extra: {
+        metadata: {
+          provider: params.inputs.provider,
+          model:    params.inputs.model,
+        },
+      },
+    }).catch((err: Error) => {
+      logger.debug('[LangSmith] createRun failed: ' + err.message);
+    });
+  }
+
+  /**
+   * Fire-and-forget: close the LangSmith run AFTER the LLM call completes.
+   */
+  endRun(eventBusId: string, params: EndRunParams): void {
+    if (!this.enabled) return;
+
+    const lsId = this.pending.get(eventBusId);
+    this.pending.delete(eventBusId);
+    if (!lsId) return;
+
+    const { inputTokens = 0, outputTokens = 0, cacheHitTokens = 0 } = params.usage ?? {};
+
+    this.client.updateRun(lsId, {
+      outputs: {
+        generations: [{ text: params.output }],
+        llm_output:  {
+          token_usage: {
+            prompt_tokens:          inputTokens,
+            completion_tokens:      outputTokens,
+            total_tokens:           inputTokens + outputTokens,
+            cache_read_input_tokens: cacheHitTokens,
+          },
+        },
+      },
+      end_time: Date.now(),
+      error:    params.error ?? null,
+    }).catch((err: Error) => {
+      logger.debug('[LangSmith] updateRun failed: ' + err.message);
+    });
   }
 }
 

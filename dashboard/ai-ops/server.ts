@@ -97,6 +97,11 @@ async function startServer(): Promise<void> {
       return;
     }
 
+    // Favicon — avoid noisy 404s in browser
+    if (method === 'GET' && url === '/favicon.ico') {
+      res.writeHead(204); res.end(); return;
+    }
+
     // Public metrics
     if (method === 'GET' && url === '/api/metrics') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -104,18 +109,32 @@ async function startServer(): Promise<void> {
       return;
     }
 
-    // Auth
-    if (method === 'POST' && url === '/api/auth') {
-      readBody(req).then(body => {
-        const { password } = JSON.parse(body || '{}');
-        if (password === ADMIN_SECRET) {
+    // Auth — POST exchanges password for token; GET validates an existing token
+    if (url === '/api/auth') {
+      if (method === 'POST') {
+        readBody(req).then(body => {
+          const { password } = JSON.parse(body || '{}');
+          if (password === ADMIN_SECRET) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ token: ADMIN_TOKEN }));
+          } else {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid password' }));
+          }
+        });
+      } else if (method === 'GET') {
+        const ah    = req.headers.authorization ?? '';
+        const given = ah.replace('Bearer ', '').trim();
+        if (given === ADMIN_TOKEN) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ token: ADMIN_TOKEN }));
+          res.end(JSON.stringify({ ok: true }));
         } else {
           res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid password' }));
+          res.end(JSON.stringify({ error: 'Unauthorized' }));
         }
-      });
+      } else {
+        res.writeHead(405); res.end();
+      }
       return;
     }
 
@@ -132,12 +151,14 @@ async function startServer(): Promise<void> {
       if (method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
-          provider:         process.env.AI_PROVIDER ?? 'local',
-          ollamaBaseUrl:    process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434',
-          ollamaModel:      process.env.OLLAMA_MODEL ?? 'llama3.2',
-          ollamaVisionModel:process.env.OLLAMA_VISION_MODEL ?? 'llava',
-          hasAnthropicKey:  !!(process.env.ANTHROPIC_API_KEY),
-          langSmithEnabled: process.env.LANGCHAIN_TRACING_V2 === 'true',
+          provider:          process.env.AI_PROVIDER ?? 'local',
+          ollamaBaseUrl:     process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434',
+          ollamaModel:       process.env.OLLAMA_MODEL ?? 'llama3.2',
+          ollamaVisionModel: process.env.OLLAMA_VISION_MODEL ?? 'llava',
+          hasAnthropicKey:   !!(process.env.ANTHROPIC_API_KEY),
+          hasLangSmithKey:   !!(process.env.LANGCHAIN_API_KEY),
+          langSmithEnabled:  process.env.LANGCHAIN_TRACING_V2 === 'true',
+          langSmithProject:  process.env.LANGCHAIN_PROJECT ?? '',
         }));
       } else {
         readBody(req).then(body => {
@@ -151,6 +172,9 @@ async function startServer(): Promise<void> {
           if (config.langSmithProject)  process.env.LANGCHAIN_PROJECT     = config.langSmithProject;
           if (config.langSmithEnabled !== undefined) {
             process.env.LANGCHAIN_TRACING_V2 = config.langSmithEnabled ? 'true' : 'false';
+          } else if (config.langSmithApiKey) {
+            // Auto-enable tracing when a new key is provided
+            process.env.LANGCHAIN_TRACING_V2 = 'true';
           }
 
           // Reset AI singleton so next call picks up new provider
@@ -192,6 +216,20 @@ async function startServer(): Promise<void> {
     console.log(`   Events SSE    →  http://localhost:${PORT}/events`);
     console.log(`   Metrics API   →  http://localhost:${PORT}/api/metrics\n`);
   });
+
+  // Keep SSE connections alive across proxies/browsers (comment ping every 25s).
+  setInterval(() => {
+    const ping = ': ping\n\n';
+    for (const client of sseClients) {
+      try { client.write(ping); } catch { sseClients.delete(client); }
+    }
+  }, 25_000);
+
+  // Broadcast fresh metrics every 60s so the dashboard stays accurate during
+  // long-running sessions even when no LLM calls are in flight.
+  setInterval(() => {
+    broadcast('metrics', costTracker.getSessionTotals());
+  }, 60_000);
 }
 
 function readBody(req: http.IncomingMessage): Promise<string> {

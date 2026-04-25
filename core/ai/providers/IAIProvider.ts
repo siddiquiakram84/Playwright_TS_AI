@@ -19,8 +19,16 @@ export interface VisionParams extends CompleteParams {
   images: AIImage[];
 }
 
+/** Token usage from the last complete/completeWithVision/completeJson call. */
+export interface TokenUsage {
+  inputTokens:    number;
+  outputTokens:   number;
+  cacheHitTokens: number;
+}
+
 export interface IAIProvider {
-  readonly name: string;
+  readonly name:      string;
+  readonly lastUsage: TokenUsage;
   complete(params: CompleteParams): Promise<string>;
   completeWithVision(params: VisionParams): Promise<string>;
   /** Parse + validate AI response against a Zod schema. Providers can override with native JSON mode. */

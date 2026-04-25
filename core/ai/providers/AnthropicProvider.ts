@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { ZodSchema } from 'zod';
-import { IAIProvider, CompleteParams, VisionParams } from './IAIProvider';
+import { IAIProvider, CompleteParams, VisionParams, TokenUsage } from './IAIProvider';
 import { logger } from '../../utils/logger';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
@@ -8,6 +8,8 @@ const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 export class AnthropicProvider implements IAIProvider {
   readonly name  = 'anthropic';
   readonly model = ANTHROPIC_MODEL;
+
+  lastUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheHitTokens: 0 };
 
   private readonly client: Anthropic;
 
@@ -42,9 +44,14 @@ export class AnthropicProvider implements IAIProvider {
       messages: [{ role: 'user', content: params.userMessage }],
     });
 
-    const cacheHit = response.usage.cache_read_input_tokens ?? 0;
-    if (cacheHit > 0) {
-      logger.debug(`[Anthropic] Cache hit — ${cacheHit} tokens saved`);
+    this.lastUsage = {
+      inputTokens:    response.usage.input_tokens,
+      outputTokens:   response.usage.output_tokens,
+      cacheHitTokens: response.usage.cache_read_input_tokens ?? 0,
+    };
+
+    if (this.lastUsage.cacheHitTokens > 0) {
+      logger.debug(`[Anthropic] Cache hit — ${this.lastUsage.cacheHitTokens} tokens saved`);
     }
 
     const textBlock = response.content.find(b => b.type === 'text');
@@ -80,6 +87,12 @@ export class AnthropicProvider implements IAIProvider {
       ],
     });
 
+    this.lastUsage = {
+      inputTokens:    response.usage.input_tokens,
+      outputTokens:   response.usage.output_tokens,
+      cacheHitTokens: response.usage.cache_read_input_tokens ?? 0,
+    };
+
     const textBlock = response.content.find(b => b.type === 'text');
     return textBlock && textBlock.type === 'text' ? textBlock.text : '';
   }
@@ -99,15 +112,6 @@ export class AnthropicProvider implements IAIProvider {
       });
       return this.parseAndValidate(repairRaw, schema);
     }
-  }
-
-  /** Token counts from last call — available after complete() resolves. */
-  getUsage(response: Anthropic.Message): { input: number; output: number; cacheHit: number } {
-    return {
-      input:    response.usage.input_tokens,
-      output:   response.usage.output_tokens,
-      cacheHit: response.usage.cache_read_input_tokens ?? 0,
-    };
   }
 
   private parseAndValidate<T>(raw: string, schema: ZodSchema<T>): T {

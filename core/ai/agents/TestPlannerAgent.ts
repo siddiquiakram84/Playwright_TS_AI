@@ -1,6 +1,7 @@
 import { AgentFn, AgentState, emitStage } from './AgentGraph';
 import { TestPlanSchema, TestPlan }       from '../schema';
 import { AIClient }                       from '../AIClient';
+import { ragRetriever, ensureIndexLoaded } from '../memory';
 import { logger }                         from '../../utils/logger';
 
 export interface PlannerInput {
@@ -43,9 +44,15 @@ export const testPlannerAgent: AgentFn<PlannerState> = async (state, ai): Promis
   logger.info(`[TestPlannerAgent] Planning (${state.inputType})`);
   emitStage(state.sessionId, 'planning', state.inputType, state.input);
 
+  // RAG: inject relevant existing specs/POMs as context so the LLM mirrors
+  // the codebase's patterns instead of generating inconsistent code.
+  await ensureIndexLoaded();
+  const ragContext = await ragRetriever.getContextBlock(state.input, 6);
+  if (ragContext) logger.info('[TestPlannerAgent] RAG: injected codebase context');
+
   const plan = await ai.completeJson<TestPlan>(
     {
-      systemPrompt: SYSTEM_PROMPT,
+      systemPrompt: SYSTEM_PROMPT + ragContext,
       userMessage:
         `Input type: ${state.inputType}\n\n` +
         `${state.input}\n\n` +

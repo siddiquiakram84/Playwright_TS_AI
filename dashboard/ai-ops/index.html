@@ -3,194 +3,864 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Ops Dashboard — JARVIS v5</title>
+  <title>AI OPS Command Center — JARVIS v5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    /* =====================================================================
+       DESIGN TOKENS
+    ===================================================================== */
     :root {
-      --bg:       #0a0b0f;
-      --surface:  #12141c;
-      --surface2: #1a1d28;
-      --border:   #262940;
-      --text:     #e0e4f0;
-      --dim:      #6b7099;
-      --purple:   #8b5cf6;
-      --purple2:  #6d28d9;
-      --green:    #10b981;
-      --red:      #ef4444;
-      --yellow:   #f59e0b;
-      --blue:     #3b82f6;
-      --cyan:     #06b6d4;
-      --orange:   #f97316;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; }
+      /* Backgrounds */
+      --bg:        #020810;
+      --surface:   #07111e;
+      --surface2:  #0d1c2e;
+      --surface3:  #122336;
 
-    /* ── Header ── */
+      /* Borders */
+      --border:    #163450;
+      --border2:   #1e4668;
+
+      /* Text — high contrast */
+      --text:      #d4edf8;
+      --text2:     #8bbdd6;
+      --muted:     #5090b0;
+      --dim:       #35698a;
+
+      /* Brand colors */
+      --cyan:      #00d4ff;
+      --cyan2:     #52e8ff;
+      --purple:    #9d6cf0;
+      --purple2:   #c09cf8;
+      --green:     #00e89a;
+      --green2:    #54ffbc;
+      --red:       #ff3d5a;
+      --yellow:    #ffd740;
+      --orange:    #ff7a40;
+      --blue:      #4da6ff;
+
+      /* Glows */
+      --glow-c:  0 0 10px rgba(0,212,255,.55), 0 0 28px rgba(0,212,255,.18);
+      --glow-g:  0 0 10px rgba(0,232,154,.55), 0 0 28px rgba(0,232,154,.18);
+      --glow-p:  0 0 10px rgba(157,108,240,.55), 0 0 28px rgba(157,108,240,.18);
+      --glow-r:  0 0 10px rgba(255,61,90,.55),  0 0 28px rgba(255,61,90,.18);
+      --glow-y:  0 0 10px rgba(255,215,64,.55), 0 0 28px rgba(255,215,64,.18);
+    }
+
+    /* =====================================================================
+       RESET
+    ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* =====================================================================
+       BACKGROUND CANVAS + OVERLAYS
+    ===================================================================== */
+    #bgCanvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .scanlines {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px
+      );
+    }
+    .vignette {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: radial-gradient(ellipse at center,
+        transparent 55%, rgba(0,0,0,.55) 100%);
+    }
+    header, .main, .cost-bar, .overlay { position: relative; z-index: 2; }
+
+    /* =====================================================================
+       HEADER
+    ===================================================================== */
     header {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 12px 20px; display: flex; align-items: center; gap: 16px;
+      flex-shrink: 0;
+      height: 56px;
+      background: linear-gradient(90deg, #030d1a 0%, #071525 50%, #030d1a 100%);
+      border-bottom: 1px solid var(--border2);
+      box-shadow: 0 2px 20px rgba(0,0,0,.7), 0 1px 0 rgba(0,212,255,.15);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow: hidden;
+      position: relative;
     }
-    header h1 { font-size: 16px; font-weight: 700; color: var(--purple); letter-spacing: 1px; }
-    .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
-    .badge-provider { background: #1e1240; color: var(--purple); border: 1px solid var(--purple2); }
-    .badge-live { background: #052e1e; color: var(--green); border: 1px solid var(--green); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    .header-stats { margin-left: auto; display: flex; gap: 24px; align-items: center; }
-    .stat { text-align: right; }
-    .stat-val { font-size: 18px; font-weight: 700; color: var(--purple); font-variant-numeric: tabular-nums; }
-    .stat-label { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-size: 12px; transition: all .15s; }
-    .btn:hover { border-color: var(--purple); color: var(--purple); }
-    .btn-primary { background: var(--purple2); border-color: var(--purple); color: #fff; }
-    .btn-primary:hover { background: var(--purple); }
+    @keyframes hScan {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(500%); }
+    }
+    header::after {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 15%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,.08), transparent);
+      animation: hScan 9s linear infinite;
+      pointer-events: none;
+    }
 
-    /* ── Layout ── */
-    .main { display: grid; grid-template-columns: 320px 1fr 320px; gap: 0; flex: 1; overflow: hidden; }
-    .panel { border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    /* Logo */
+    .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .logo-hex { display: flex; align-items: center; }
+    .logo-hex svg { filter: drop-shadow(0 0 7px rgba(0,212,255,.6)); }
+    @keyframes hexSpin {
+      0%,100% { transform: rotate(0deg); }
+      50%      { transform: rotate(360deg); }
+    }
+    .logo-hex .spin { transform-origin: 15px 15px; animation: hexSpin 10s ease-in-out infinite; }
+    .logo-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 5px;
+      color: var(--cyan);
+      text-shadow: var(--glow-c);
+    }
+    .logo-sub {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    /* Badges */
+    .badge {
+      padding: 4px 11px;
+      border-radius: 3px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .badge-provider {
+      background: rgba(0,212,255,.09);
+      color: var(--cyan2);
+      border: 1px solid rgba(0,212,255,.3);
+    }
+    .badge-live {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(0,232,154,.09);
+      color: var(--green2);
+      border: 1px solid rgba(0,232,154,.3);
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: var(--glow-g);
+      animation: lPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes lPulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .45; transform: scale(1.4); }
+    }
+
+    /* Clock */
+    .clock {
+      margin: 0 auto;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--cyan);
+      text-shadow: var(--glow-c);
+    }
+
+    /* Header stats */
+    .h-stats { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+    .h-sep { width: 1px; height: 30px; background: linear-gradient(180deg, transparent, var(--border2), transparent); }
+    .stat { text-align: right; }
+    .stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--cyan);
+      text-shadow: var(--glow-c);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .stat-lbl {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 7px 14px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text2);
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 12px rgba(0,212,255,.15); }
+    .btn-primary {
+      background: rgba(0,212,255,.12);
+      border-color: rgba(0,212,255,.5);
+      color: var(--cyan);
+    }
+    .btn-primary:hover { background: rgba(0,212,255,.22); box-shadow: var(--glow-c); }
+    .btn:disabled { opacity: .3; cursor: not-allowed; pointer-events: none; }
+
+    /* =====================================================================
+       MAIN GRID
+    ===================================================================== */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 290px 1fr 310px;
+      overflow: hidden;
+    }
+
+    /* =====================================================================
+       PANELS
+    ===================================================================== */
+    .panel {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: linear-gradient(175deg, var(--surface) 0%, var(--bg) 100%);
+      position: relative;
+    }
     .panel:last-child { border-right: none; }
-    .panel-header { padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .panel-body { flex: 1; overflow-y: auto; padding: 0; }
+
+    /* Corner brackets */
+    .panel::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 16px; height: 16px;
+      border-top: 1px solid rgba(0,212,255,.4);
+      border-left: 1px solid rgba(0,212,255,.4);
+      z-index: 3; pointer-events: none;
+    }
+    .panel::after {
+      content: ''; position: absolute; bottom: 0; right: 0;
+      width: 16px; height: 16px;
+      border-bottom: 1px solid rgba(0,212,255,.4);
+      border-right: 1px solid rgba(0,212,255,.4);
+      z-index: 3; pointer-events: none;
+    }
+
+    .panel-hdr {
+      flex-shrink: 0;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,212,255,.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-hdr-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--cyan2);
+    }
+    @keyframes pScan {
+      0%   { transform: translateX(-130%); }
+      100% { transform: translateX(280%); }
+    }
+    .panel-hdr::before {
+      content: ''; position: absolute; inset: 0; width: 42%;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,.06), transparent);
+      animation: pScan 7s linear infinite; pointer-events: none;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+    }
     .panel-body::-webkit-scrollbar { width: 4px; }
     .panel-body::-webkit-scrollbar-track { background: transparent; }
-    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .panel-body::-webkit-scrollbar-thumb { background: rgba(0,212,255,.2); border-radius: 2px; }
 
-    /* ── Event feed ── */
-    .event { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; transition: background .1s; }
-    .event:hover { background: var(--surface2); }
-    .event-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-    .event-body { flex: 1; min-width: 0; }
-    .event-title { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .event-meta { color: var(--dim); font-size: 11px; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .event-meta span { display: flex; align-items: center; gap: 3px; }
-    .event-time { flex-shrink: 0; color: var(--dim); font-size: 10px; font-variant-numeric: tabular-nums; }
-    .tag { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
-    .tag-op      { background: #1e1240; color: var(--purple); }
-    .tag-ok      { background: #052e1e; color: var(--green); }
-    .tag-err     { background: #2d0f0f; color: var(--red); }
-    .tag-warn    { background: #1f1508; color: var(--yellow); }
-    .tag-latency { background: #0c1a2e; color: var(--blue); }
-    .tag-heal    { background: #052e1e; color: #34d399; }
-    .tag-record  { background: #1f0c0f; color: var(--orange); }
-    .tag-gen     { background: #052028; color: var(--cyan); }
+    /* =====================================================================
+       LEFT PANEL — CONFIG
+    ===================================================================== */
+    .cfg-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cfg-section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cfg-section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
 
-    /* ── Left panel: Provider + Admin ── */
-    .config-section { padding: 16px; border-bottom: 1px solid var(--border); }
-    .config-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--dim); margin-bottom: 10px; }
-    .config-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
-    .config-key { color: var(--dim); }
-    .config-val { color: var(--text); font-weight: 600; font-family: monospace; }
-    .config-val.ok  { color: var(--green); }
-    .config-val.off { color: var(--red); }
+    .cfg-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(22,52,80,.5);
+    }
+    .cfg-row:last-child { border-bottom: none; }
+    .cfg-key {
+      font-size: 11px;
+      color: var(--text2);
+    }
+    .cfg-val {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+    }
+    .cfg-val.ok  { color: var(--green2); text-shadow: 0 0 6px rgba(0,232,154,.4); }
+    .cfg-val.off { color: var(--red); }
 
-    /* ── Admin modal ── */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: center; justify-content: center; }
-    .overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 480px; max-width: 95vw; padding: 24px; }
-    .modal h2 { font-size: 15px; margin-bottom: 20px; color: var(--purple); }
-    .form-group { margin-bottom: 14px; }
-    .form-label { display: block; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .form-control { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 12px; font-size: 13px; outline: none; transition: border-color .15s; }
-    .form-control:focus { border-color: var(--purple); }
-    select.form-control option { background: var(--surface2); }
-    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-    .alert { padding: 8px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 12px; }
-    .alert-err { background: #2d0f0f; border: 1px solid var(--red); color: var(--red); }
-    .alert-ok  { background: #052e1e; border: 1px solid var(--green); color: var(--green); }
+    /* LangSmith pill */
+    .ls-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+    .ls-badge.on  { background: rgba(0,232,154,.1); color: var(--green2); border: 1px solid rgba(0,232,154,.25); }
+    .ls-badge.off { background: rgba(255,61,90,.1);  color: var(--red);    border: 1px solid rgba(255,61,90,.25); }
+    .ls-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
-    /* ── Center: LLM log ── */
-    .llm-row { padding: 8px 16px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 24px 100px 80px 1fr 70px 70px; gap: 8px; align-items: center; }
-    .llm-row:hover { background: var(--surface2); }
-    .llm-op { font-weight: 600; font-size: 11px; }
-    .llm-provider { color: var(--dim); font-size: 11px; }
-    .latency-bar { height: 4px; border-radius: 2px; background: var(--purple2); max-width: 100%; transition: width .3s; }
-    .llm-tokens { color: var(--dim); font-size: 11px; text-align: right; }
-    .llm-cost { color: var(--green); font-size: 11px; text-align: right; font-family: monospace; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-    .status-dot.err { background: var(--red); animation: none; }
-    .status-dot.pending { background: var(--yellow); animation: pulse 1s infinite; }
+    /* =====================================================================
+       CENTER PANEL — LLM CALL LOG
+    ===================================================================== */
+    .llm-grid { display: grid; grid-template-columns: 18px 115px 80px 1fr 72px 78px; gap: 8px; align-items: center; }
 
-    /* ── Right panel: Activity log ── */
-    .activity-group { }
-    .activity-group-header { padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); background: var(--surface); position: sticky; top: 0; z-index: 1; }
+    .llm-col-hdr {
+      flex-shrink: 0;
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.3);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
 
-    /* ── Cost bar ── */
-    .cost-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 16px; }
-    .cost-bar-label { color: var(--dim); font-size: 11px; }
-    .cost-bar-val { color: var(--green); font-weight: 700; font-family: monospace; }
-    .cost-progress-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
-    .cost-progress-fill { height: 100%; background: linear-gradient(90deg, var(--purple2), var(--purple)); border-radius: 4px; transition: width .5s; min-width: 2px; }
+    @keyframes sIn {
+      from { opacity: 0; transform: translateX(-8px); background: rgba(0,212,255,.06); }
+      to   { opacity: 1; transform: translateX(0);    background: transparent; }
+    }
+    .llm-row {
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(22,52,80,.6);
+      transition: background .12s;
+      animation: sIn .2s ease-out;
+    }
+    .llm-row:hover { background: rgba(0,212,255,.03); }
 
-    /* ── Recorder panel ── */
-    .recorder-empty { padding: 24px 16px; color: var(--dim); text-align: center; line-height: 1.6; }
-    .recorder-empty code { display: block; margin-top: 12px; background: var(--surface2); padding: 6px 10px; border-radius: 6px; color: var(--cyan); font-size: 12px; }
-    .gen-code { background: var(--surface2); padding: 12px; margin: 8px; border-radius: 6px; font-family: monospace; font-size: 11px; color: var(--cyan); white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; border: 1px solid var(--border); }
+    .llm-op { font-size: 12px; font-weight: 700; color: var(--text); }
+    .llm-prov { font-size: 11px; color: var(--text2); }
 
-    /* ── Tabs (center panel) ── */
-    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); }
-    .tab { padding: 8px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--dim); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
-    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .lat-col { display: flex; flex-direction: column; gap: 3px; }
+    .lat-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      box-shadow: 0 0 5px rgba(0,212,255,.35);
+      min-width: 2px;
+      transition: width .4s ease-out;
+    }
+    .lat-ms { font-size: 10px; color: var(--text2); }
+
+    .llm-tok { font-size: 11px; color: var(--text2); text-align: right; }
+    .llm-cost { font-size: 11px; color: var(--green2); text-align: right; }
+    .llm-cost.err { color: var(--red); }
+
+    /* Status dot */
+    .sdot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: var(--glow-g);
+      position: relative;
+    }
+    .sdot.err     { background: var(--red);    box-shadow: var(--glow-r); }
+    .sdot.pending { background: var(--yellow); box-shadow: var(--glow-y); animation: lPulse .9s ease-in-out infinite; }
+    @keyframes dPing {
+      0%   { transform: scale(1); opacity: .7; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+    .sdot::after {
+      content: ''; position: absolute; inset: 0;
+      border-radius: 50%; background: inherit;
+      animation: dPing 2s ease-out infinite;
+    }
+    .sdot.err::after,
+    .sdot.pending::after { display: none; }
+
+    /* =====================================================================
+       TABS
+    ===================================================================== */
+    .tabs {
+      flex-shrink: 0;
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.35);
+    }
+    .tab {
+      padding: 10px 18px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .tab:hover { color: var(--text2); }
+    .tab.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+      text-shadow: 0 0 10px rgba(0,212,255,.5);
+    }
     .tab-content { display: none; flex: 1; overflow-y: auto; }
     .tab-content.active { display: block; }
 
-    /* ── Scores ── */
-    .score-ring { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--purple); font-weight: 700; font-size: 13px; color: var(--purple); }
-    .score-ring.high { border-color: var(--green); color: var(--green); }
-    .score-ring.med  { border-color: var(--yellow); color: var(--yellow); }
-    .score-ring.low  { border-color: var(--red); color: var(--red); }
+    /* =====================================================================
+       GENERIC EVENT ROW (healing, visual, recorder, testgen)
+    ===================================================================== */
+    .ev-row {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(22,52,80,.6);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: sIn .2s ease-out;
+      transition: background .12s;
+    }
+    .ev-row:hover { background: rgba(0,212,255,.03); }
+    .ev-icon { font-size: 14px; flex-shrink: 0; line-height: 1.4; }
+    .ev-body { flex: 1; min-width: 0; }
+    .ev-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ev-meta {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 3px;
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .ev-time {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
 
-    .empty-state { padding: 40px 16px; text-align: center; color: var(--dim); }
-    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+    /* Tags */
+    .tag {
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      white-space: nowrap;
+    }
+    .tag-op     { background: rgba(157,108,240,.15); color: var(--purple2); border: 1px solid rgba(157,108,240,.3); }
+    .tag-ok     { background: rgba(0,232,154,.12);   color: var(--green2);  border: 1px solid rgba(0,232,154,.28); }
+    .tag-err    { background: rgba(255,61,90,.12);   color: var(--red);     border: 1px solid rgba(255,61,90,.28); }
+    .tag-warn   { background: rgba(255,215,64,.12);  color: var(--yellow);  border: 1px solid rgba(255,215,64,.28); }
+    .tag-heal   { background: rgba(0,232,154,.12);   color: var(--green2);  border: 1px solid rgba(0,232,154,.28); }
+    .tag-rec    { background: rgba(255,122,64,.12);  color: var(--orange);  border: 1px solid rgba(255,122,64,.28); }
+    .tag-gen    { background: rgba(0,212,255,.12);   color: var(--cyan2);   border: 1px solid rgba(0,212,255,.28); }
+
+    /* Score rings */
+    .score-ring {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+    .score-ring.high { border-color: var(--green2); color: var(--green2); box-shadow: var(--glow-g); }
+    .score-ring.med  { border-color: var(--yellow); color: var(--yellow); }
+    .score-ring.low  { border-color: var(--red);    color: var(--red); box-shadow: var(--glow-r); }
+
+    /* =====================================================================
+       RIGHT PANEL — RECORDER + CODE
+    ===================================================================== */
+    .rec-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    .rec-empty code {
+      display: block;
+      margin-top: 10px;
+      background: var(--surface2);
+      padding: 7px 12px;
+      border-radius: 3px;
+      color: var(--cyan2);
+      font-size: 11px;
+      border: 1px solid var(--border2);
+    }
+    .gen-code {
+      margin: 8px;
+      padding: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      font-size: 11px;
+      color: var(--cyan2);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 300px;
+      overflow-y: auto;
+      line-height: 1.6;
+      text-shadow: 0 0 5px rgba(0,255,247,.2);
+    }
+    .gen-code::-webkit-scrollbar { width: 4px; }
+    .gen-code::-webkit-scrollbar-thumb { background: rgba(0,212,255,.2); border-radius: 2px; }
+
+    /* =====================================================================
+       EMPTY STATES
+    ===================================================================== */
+    .empty {
+      padding: 44px 18px;
+      text-align: center;
+      color: var(--dim);
+    }
+    .empty .icon {
+      font-size: 30px;
+      display: block;
+      margin-bottom: 12px;
+      opacity: .45;
+    }
+    .empty-msg {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .empty code {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 5px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      color: var(--cyan2);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0;
+    }
+
+    /* =====================================================================
+       COST BAR (FOOTER)
+    ===================================================================== */
+    .cost-bar {
+      flex-shrink: 0;
+      height: 40px;
+      background: linear-gradient(90deg, #030d1a 0%, #071525 50%, #030d1a 100%);
+      border-top: 1px solid var(--border2);
+      box-shadow: 0 -1px 0 rgba(0,212,255,.1);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .cost-lbl {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .cost-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green2);
+      text-shadow: var(--glow-g);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .cost-bar-wrap {
+      flex: 1;
+      height: 5px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .cost-fill {
+      height: 100%;
+      min-width: 2px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple), var(--green));
+      background-size: 200% 100%;
+      box-shadow: 0 0 8px rgba(0,212,255,.5);
+      transition: width .5s ease-out;
+      animation: shimmer 3s linear infinite;
+    }
+    .conn-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      white-space: nowrap;
+    }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* =====================================================================
+       ADMIN MODAL
+    ===================================================================== */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.88);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid rgba(0,212,255,.25);
+      border-radius: 4px;
+      width: 490px;
+      max-width: 95vw;
+      padding: 26px;
+      box-shadow: 0 0 60px rgba(0,0,0,.9), 0 0 2px rgba(0,212,255,.2), inset 0 0 40px rgba(0,212,255,.02);
+      position: relative;
+    }
+    .modal::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 20px; height: 20px;
+      border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan);
+    }
+    .modal::after {
+      content: ''; position: absolute; bottom: 0; right: 0;
+      width: 20px; height: 20px;
+      border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan);
+    }
+    .modal h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--cyan);
+      text-shadow: var(--glow-c);
+      margin-bottom: 22px;
+    }
+    .form-group { margin-bottom: 15px; }
+    .form-lbl {
+      display: block;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+    .form-ctrl {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      color: var(--text);
+      padding: 9px 13px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-ctrl:focus { border-color: rgba(0,212,255,.5); box-shadow: 0 0 14px rgba(0,212,255,.08); }
+    select.form-ctrl option { background: var(--surface2); }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .alert { padding: 9px 13px; border-radius: 3px; margin-bottom: 15px; font-size: 12px; }
+    .alert-err { background: rgba(255,61,90,.1);  border: 1px solid rgba(255,61,90,.3);  color: var(--red); }
+    .alert-ok  { background: rgba(0,232,154,.1);  border: 1px solid rgba(0,232,154,.3);  color: var(--green2); }
   </style>
 </head>
 <body>
 
-<!-- Header -->
+<canvas id="bgCanvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════════════════════ -->
 <header>
-  <h1>🤖 AI Ops</h1>
-  <span class="badge badge-provider" id="providerBadge">local / llama3.2</span>
-  <span class="badge badge-live">● LIVE</span>
-  <div class="header-stats">
+  <div class="logo">
+    <div class="logo-hex">
+      <svg width="32" height="32" viewBox="0 0 32 32">
+        <polygon points="16,2 28,9 28,23 16,30 4,23 4,9"
+                 fill="none" stroke="rgba(0,212,255,.35)" stroke-width="1"/>
+        <polygon class="spin"
+                 points="16,6 25,11 25,21 16,26 7,21 7,11"
+                 fill="rgba(0,212,255,.08)" stroke="#00d4ff" stroke-width="1.3"/>
+        <text x="16" y="20" text-anchor="middle"
+              font-family="Orbitron,sans-serif" font-size="8" font-weight="900" fill="#00d4ff">AI</text>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">AI OPS</div>
+      <div class="logo-sub">COMMAND CENTER</div>
+    </div>
+  </div>
+
+  <span class="badge badge-provider" id="providerBadge">LOCAL / LLAMA3.2</span>
+  <span class="badge badge-live"><span class="live-dot"></span>LIVE</span>
+
+  <div class="clock" id="clock">00:00:00</div>
+
+  <div class="h-stats">
+    <div class="h-sep"></div>
     <div class="stat">
       <div class="stat-val" id="statCalls">0</div>
-      <div class="stat-label">LLM Calls</div>
+      <div class="stat-lbl">Calls</div>
     </div>
+    <div class="h-sep"></div>
     <div class="stat">
       <div class="stat-val" id="statTokens">0</div>
-      <div class="stat-label">Tokens</div>
+      <div class="stat-lbl">Tokens</div>
     </div>
+    <div class="h-sep"></div>
     <div class="stat">
       <div class="stat-val" id="statCost">$0.000</div>
-      <div class="stat-label">Est. Cost</div>
+      <div class="stat-lbl">Cost</div>
     </div>
-    <button class="btn" onclick="openAdmin()">⚙ Admin</button>
+    <div class="h-sep"></div>
+    <button class="btn" onclick="openAdmin()">⚙ ADMIN</button>
   </div>
 </header>
 
-<!-- Main layout -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     MAIN GRID
+═══════════════════════════════════════════════════════════════════════ -->
 <div class="main">
 
-  <!-- Left: Provider config + Healing log -->
+  <!-- ─── LEFT: Config + Self-Healing ─────────────────────────────────── -->
   <div class="panel">
-    <div class="panel-header">
-      <span>Provider</span>
-      <button class="btn" style="font-size:10px;padding:2px 8px;" onclick="refreshConfig()">Refresh</button>
-    </div>
-    <div class="config-section" id="configDisplay">
-      <div class="config-row"><span class="config-key">Provider</span><span class="config-val" id="cfgProvider">—</span></div>
-      <div class="config-row"><span class="config-key">Model</span><span class="config-val" id="cfgModel">—</span></div>
-      <div class="config-row"><span class="config-key">Anthropic Key</span><span class="config-val" id="cfgAnthropicKey">—</span></div>
-      <div class="config-row"><span class="config-key">LangSmith</span><span class="config-val" id="cfgLangSmith">—</span></div>
+
+    <div class="panel-hdr">
+      <span class="panel-hdr-title">Provider Config</span>
+      <button class="btn" style="padding:3px 9px;font-size:9px;" onclick="refreshConfig()">SYNC</button>
     </div>
 
-    <div class="panel-header" style="margin-top:0;">
-      <span>Self-Healing Log</span>
-      <span id="healCount" style="color:var(--green);font-weight:700;">0</span>
+    <!-- Provider section -->
+    <div class="cfg-section">
+      <div class="cfg-section-title">Runtime</div>
+      <div class="cfg-row">
+        <span class="cfg-key">Provider</span>
+        <span class="cfg-val" id="cfgProvider">—</span>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-key">Model</span>
+        <span class="cfg-val" id="cfgModel">—</span>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-key">Anthropic Key</span>
+        <span class="cfg-val" id="cfgAnthropicKey">—</span>
+      </div>
+    </div>
+
+    <!-- LangSmith section -->
+    <div class="cfg-section">
+      <div class="cfg-section-title">LangSmith Tracing</div>
+      <div class="cfg-row">
+        <span class="cfg-key">Status</span>
+        <span id="cfgLSStatus"><span class="ls-badge off"><span class="ls-badge-dot"></span>DISABLED</span></span>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-key">Project</span>
+        <span class="cfg-val" id="cfgLSProject">—</span>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-key">Traces sent</span>
+        <span class="cfg-val ok" id="cfgLSCount">0</span>
+      </div>
+    </div>
+
+    <div class="panel-hdr">
+      <span class="panel-hdr-title">Self-Healing Log</span>
+      <span id="healCount"
+            style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--green2);">0</span>
     </div>
     <div class="panel-body" id="healLog">
-      <div class="empty-state"><div class="icon">🔧</div>Healed selectors appear here</div>
+      <div class="empty">
+        <span class="icon">🔧</span>
+        <div class="empty-msg">Healed selectors appear here</div>
+      </div>
     </div>
+
   </div>
 
-  <!-- Center: LLM call log + Test gen -->
+  <!-- ─── CENTER: LLM / TestGen / Visual tabs ──────────────────────────── -->
   <div class="panel">
     <div class="tabs">
       <div class="tab active" onclick="switchTab('llm',this)">LLM Calls</div>
@@ -198,188 +868,286 @@
       <div class="tab" onclick="switchTab('visual',this)">Visual AI</div>
     </div>
 
-    <!-- LLM Calls tab -->
-    <div class="tab-content active" id="tab-llm">
-      <div style="padding:8px 16px;display:grid;grid-template-columns:24px 100px 80px 1fr 70px 70px;gap:8px;color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);">
-        <span></span><span>Operation</span><span>Provider</span><span>Latency</span><span>Tokens</span><span>Cost</span>
+    <!-- LLM Calls -->
+    <div class="tab-content active" id="tab-llm"
+         style="display:flex;flex-direction:column;overflow:hidden;">
+      <div class="llm-col-hdr llm-grid">
+        <span></span><span>Operation</span><span>Provider</span><span>Latency</span>
+        <span style="text-align:right">Tokens</span><span style="text-align:right">Cost</span>
       </div>
-      <div id="llmLog">
-        <div class="empty-state"><div class="icon">⚡</div>LLM calls appear here in real-time</div>
+      <div id="llmLog" style="flex:1;overflow-y:auto;">
+        <div class="empty">
+          <span class="icon">⚡</span>
+          <div class="empty-msg">LLM calls stream here in real-time</div>
+        </div>
       </div>
     </div>
 
-    <!-- Test Gen tab -->
+    <!-- Test Generator -->
     <div class="tab-content" id="tab-testgen">
       <div id="testgenLog">
-        <div class="empty-state"><div class="icon">🧠</div>Multi-agent pipeline stages appear here<br><br>Run: <code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--cyan);">npm run ai:generate-tests -- --nl "test checkout"</code></div>
+        <div class="empty">
+          <span class="icon">🧠</span>
+          <div class="empty-msg">
+            Multi-agent pipeline stages appear here<br><br>
+            Run:<br>
+            <code>npm run ai:generate-tests -- --nl "test checkout"</code>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Visual AI tab -->
+    <!-- Visual AI -->
     <div class="tab-content" id="tab-visual">
       <div id="visualLog">
-        <div class="empty-state"><div class="icon">👁</div>Visual regression comparisons appear here<br><br>Run: <code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--cyan);">npm run test:ai -- --grep visual</code></div>
+        <div class="empty">
+          <span class="icon">👁</span>
+          <div class="empty-msg">
+            Visual regression comparisons appear here<br><br>
+            Run:<br>
+            <code>npm run test:ai -- --grep visual</code>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Right: Recorder + Activity -->
+  <!-- ─── RIGHT: Recorder + Generated Code ─────────────────────────────── -->
   <div class="panel">
-    <div class="panel-header">
-      <span>Live Recorder</span>
-      <span id="recActionCount" style="color:var(--orange);font-weight:700;">0 actions</span>
+
+    <div class="panel-hdr">
+      <span class="panel-hdr-title">Live Recorder</span>
+      <span id="recCount"
+            style="font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--orange);">0 actions</span>
     </div>
-    <div class="panel-body" id="recorderLog" style="max-height:45%;">
-      <div class="recorder-empty">
-        Perform browser actions to see them here<br>
+    <div class="panel-body" id="recorderLog"
+         style="max-height:44%;border-bottom:1px solid var(--border);">
+      <div class="rec-empty">
+        Perform browser actions to capture them<br>
         <code>npm run ai:record</code>
       </div>
     </div>
 
-    <div class="panel-header" style="border-top:1px solid var(--border);">
-      <span>Generated Code</span>
-      <button class="btn" style="font-size:10px;padding:2px 8px;" onclick="copyCode()" id="copyBtn" disabled>Copy</button>
+    <div class="panel-hdr">
+      <span class="panel-hdr-title">Generated Code</span>
+      <button class="btn" id="copyBtn" style="padding:3px 9px;font-size:9px;"
+              onclick="copyCode()" disabled>COPY</button>
     </div>
     <div class="panel-body" id="generatedCode">
-      <div class="empty-state" style="padding:16px;"><div class="icon">📝</div>Spec code appears after generation</div>
+      <div class="empty" style="padding:20px 16px;">
+        <span class="icon">📝</span>
+        <div class="empty-msg">Playwright spec appears after test generation</div>
+      </div>
     </div>
+
   </div>
+
 </div>
 
-<!-- Cost bar -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     COST BAR
+═══════════════════════════════════════════════════════════════════════ -->
 <div class="cost-bar">
-  <span class="cost-bar-label">Session cost</span>
-  <span class="cost-bar-val" id="costBarVal">$0.0000</span>
-  <div class="cost-progress-wrap">
-    <div class="cost-progress-fill" id="costFill" style="width:0%"></div>
+  <span class="cost-lbl">Session</span>
+  <span class="cost-val" id="costVal">$0.0000</span>
+  <div class="cost-bar-wrap">
+    <div class="cost-fill" id="costFill" style="width:0%"></div>
   </div>
-  <span class="cost-bar-label" id="costBarTokens">0 tokens</span>
-  <span class="cost-bar-label" style="margin-left:auto;" id="connStatus">⬤ Connecting…</span>
+  <span class="cost-lbl" id="costTokens">0 tokens</span>
+  <div class="conn-status" id="connStatus">
+    <span class="conn-dot" style="background:var(--yellow);box-shadow:var(--glow-y);"></span>
+    CONNECTING
+  </div>
 </div>
 
-<!-- Admin modal -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ADMIN MODAL
+═══════════════════════════════════════════════════════════════════════ -->
 <div class="overlay" id="adminOverlay" onclick="closeAdmin(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h2>⚙ Admin — Provider Configuration</h2>
+    <h2>⚙ ADMIN — PROVIDER CONFIGURATION</h2>
     <div id="adminAlert" style="display:none"></div>
 
     <div id="authForm">
       <div class="form-group">
-        <label class="form-label">Admin Password</label>
-        <input class="form-control" type="password" id="adminPassword" placeholder="Enter ADMIN_SECRET from .env" onkeydown="if(event.key==='Enter')doAuth()">
+        <label class="form-lbl">Admin Password</label>
+        <input class="form-ctrl" type="password" id="adminPwd"
+               placeholder="Enter ADMIN_SECRET from .env"
+               onkeydown="if(event.key==='Enter')doAuth()">
       </div>
       <div class="form-actions">
-        <button class="btn" onclick="closeAdmin()">Cancel</button>
-        <button class="btn btn-primary" onclick="doAuth()">Authenticate</button>
+        <button class="btn" onclick="closeAdmin()">CANCEL</button>
+        <button class="btn btn-primary" onclick="doAuth()">AUTHENTICATE</button>
       </div>
     </div>
 
     <div id="configForm" style="display:none">
       <div class="form-group">
-        <label class="form-label">AI Provider</label>
-        <select class="form-control" id="cfgProviderSelect">
+        <label class="form-lbl">AI Provider</label>
+        <select class="form-ctrl" id="cfgProvSel">
           <option value="local">Local (Ollama — free)</option>
           <option value="anthropic">Anthropic Claude (paid)</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Anthropic API Key</label>
-        <input class="form-control" type="password" id="cfgKeyInput" placeholder="sk-ant-…">
+        <label class="form-lbl">Anthropic API Key</label>
+        <input class="form-ctrl" type="password" id="cfgKeyInput" placeholder="sk-ant-…">
       </div>
       <div class="form-group">
-        <label class="form-label">Ollama Model</label>
-        <input class="form-control" type="text" id="cfgOllamaModel" placeholder="llama3.2">
+        <label class="form-lbl">Ollama Model</label>
+        <input class="form-ctrl" type="text" id="cfgOllamaModel" placeholder="llama3.2">
       </div>
       <div class="form-group">
-        <label class="form-label">LangSmith API Key (optional)</label>
-        <input class="form-control" type="password" id="cfgLSKey" placeholder="ls__…">
+        <label class="form-lbl">LangSmith API Key (optional)</label>
+        <input class="form-ctrl" type="password" id="cfgLSKey" placeholder="lsv2_pt_…">
       </div>
       <div class="form-group">
-        <label class="form-label">LangSmith Project Name</label>
-        <input class="form-control" type="text" id="cfgLSProject" placeholder="playwright-ai-framework">
+        <label class="form-lbl">LangSmith Project</label>
+        <input class="form-ctrl" type="text" id="cfgLSProj" placeholder="playwright-ai-framework">
       </div>
       <div class="form-actions">
-        <button class="btn" onclick="closeAdmin()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveConfig()">Save & Apply</button>
+        <button class="btn" onclick="closeAdmin()">CANCEL</button>
+        <button class="btn btn-primary" onclick="saveConfig()">SAVE &amp; APPLY</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════════════════════ -->
 <script>
-const BASE = `http://${location.hostname}:${location.port || 9093}`;
-let token = localStorage.getItem('ai-ops-token') ?? '';
-let lastCode = '';
-let healCount = 0;
-let recActionCount = 0;
-let pendingCalls = {}; // id → start event
+// ── Particle background ───────────────────────────────────────────────────────
+(function () {
+  const cv = document.getElementById('bgCanvas');
+  const cx = cv.getContext('2d');
+  let pts  = [];
 
-// ── SSE Connection ──────────────────────────────────────────────────────────
+  function spawn() {
+    cv.width  = window.innerWidth;
+    cv.height = window.innerHeight;
+    const n   = Math.max(35, Math.floor(cv.width * cv.height / 22000));
+    pts = Array.from({ length: n }, () => ({
+      x: Math.random() * cv.width,
+      y: Math.random() * cv.height,
+      vx: (Math.random() - .5) * .22,
+      vy: (Math.random() - .5) * .22,
+      r:  Math.random() * 1.2 + .4,
+    }));
+  }
+
+  function draw() {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.strokeStyle = '#00d4ff';
+    cx.lineWidth   = .5;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        if (d < 120) {
+          cx.globalAlpha = (1 - d / 120) * .15;
+          cx.beginPath();
+          cx.moveTo(pts[i].x, pts[i].y);
+          cx.lineTo(pts[j].x, pts[j].y);
+          cx.stroke();
+        }
+      }
+    }
+    cx.fillStyle = '#00d4ff';
+    for (const p of pts) {
+      cx.globalAlpha = .38;
+      cx.beginPath();
+      cx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      cx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > cv.width)  p.vx *= -1;
+      if (p.y < 0 || p.y > cv.height) p.vy *= -1;
+    }
+    cx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+
+  spawn(); draw();
+  window.addEventListener('resize', spawn);
+})();
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function tick() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    String(d.getHours()).padStart(2,'0') + ':' +
+    String(d.getMinutes()).padStart(2,'0') + ':' +
+    String(d.getSeconds()).padStart(2,'0');
+}
+tick();
+setInterval(tick, 1000);
+
+// ── Connection status ─────────────────────────────────────────────────────────
+function setConn(label, color) {
+  document.getElementById('connStatus').innerHTML =
+    `<span class="conn-dot" style="background:${color};box-shadow:0 0 6px ${color};"></span>${label}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CORE LOGIC
+// ══════════════════════════════════════════════════════════════════════════════
+const BASE = `http://${location.hostname}:${location.port || 9093}`;
+let token          = localStorage.getItem('ai-ops-token') ?? '';
+let lastCode       = '';
+let healCount      = 0;
+let recCount       = 0;
+let lsTraceCount   = 0;
+let pendingCalls   = {};
+
+// ── SSE ───────────────────────────────────────────────────────────────────────
 function connect() {
   const es = new EventSource(`${BASE}/events`);
-
-  es.addEventListener('open', () => {
-    document.getElementById('connStatus').textContent = '⬤ Connected';
-    document.getElementById('connStatus').style.color = 'var(--green)';
-  });
-
+  es.addEventListener('open', () => setConn('ONLINE', 'var(--green)'));
   es.addEventListener('error', () => {
-    document.getElementById('connStatus').textContent = '⬤ Disconnected';
-    document.getElementById('connStatus').style.color = 'var(--red)';
-    setTimeout(connect, 3000);
+    setConn('RECONNECTING', 'var(--yellow)');
     es.close();
+    setTimeout(connect, 3000);
   });
-
-  es.addEventListener('metrics', e => updateStats(JSON.parse(e.data)));
-
-  es.addEventListener('llm-start', e => {
-    const d = JSON.parse(e.data);
-    pendingCalls[d.id] = d;
-    appendLLMRow(d, null);
-  });
-
-  es.addEventListener('llm-end', e => {
-    const d = JSON.parse(e.data);
-    delete pendingCalls[d.id];
-    updateLLMRow(d);
-    if (d.totals) updateStats(d.totals);
-  });
-
-  es.addEventListener('healing', e => appendHealing(JSON.parse(e.data)));
-  es.addEventListener('visual',  e => appendVisual(JSON.parse(e.data)));
-  es.addEventListener('recorder-action', e => appendRecorderAction(JSON.parse(e.data)));
-  es.addEventListener('testgen',  e => appendTestGen(JSON.parse(e.data)));
-  es.addEventListener('admin',    e => { fetchConfig(); });
+  es.addEventListener('metrics',         e => updateStats(JSON.parse(e.data)));
+  es.addEventListener('llm-start',       e => { const d = JSON.parse(e.data); pendingCalls[d.id] = d; appendLLMRow(d, null); });
+  es.addEventListener('llm-end',         e => { const d = JSON.parse(e.data); delete pendingCalls[d.id]; updateLLMRow(d); if (d.totals) updateStats(d.totals); lsTraceCount++; document.getElementById('cfgLSCount').textContent = lsTraceCount; });
+  es.addEventListener('healing',         e => appendHealing(JSON.parse(e.data)));
+  es.addEventListener('visual',          e => appendVisual(JSON.parse(e.data)));
+  es.addEventListener('recorder-action', e => appendRecAction(JSON.parse(e.data)));
+  es.addEventListener('testgen',         e => appendTestGen(JSON.parse(e.data)));
+  es.addEventListener('admin',           () => fetchConfig());
 }
 
-// ── Stats update ──────────────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 function updateStats(t) {
-  document.getElementById('statCalls').textContent = t.calls ?? 0;
-  const totalTok = (t.inputTokens ?? 0) + (t.outputTokens ?? 0);
-  document.getElementById('statTokens').textContent = fmtNum(totalTok);
-  document.getElementById('statCost').textContent = '$' + ((t.estimatedCostUsd ?? 0).toFixed(4));
-  document.getElementById('costBarVal').textContent = '$' + ((t.estimatedCostUsd ?? 0).toFixed(4));
-  document.getElementById('costBarTokens').textContent = fmtNum(totalTok) + ' tokens';
-  const pct = Math.min(100, ((t.estimatedCostUsd ?? 0) / 1) * 100); // scale to $1 max
-  document.getElementById('costFill').style.width = pct + '%';
+  document.getElementById('statCalls').textContent  = t.calls ?? 0;
+  const tok = (t.inputTokens ?? 0) + (t.outputTokens ?? 0);
+  document.getElementById('statTokens').textContent = fmtNum(tok);
+  document.getElementById('statCost').textContent   = '$' + (t.estimatedCostUsd ?? 0).toFixed(3);
+  document.getElementById('costVal').textContent    = '$' + (t.estimatedCostUsd ?? 0).toFixed(4);
+  document.getElementById('costTokens').textContent = fmtNum(tok) + ' tokens';
+  document.getElementById('costFill').style.width   = Math.min(100, ((t.estimatedCostUsd ?? 0) / 1) * 100) + '%';
 }
 
-// ── LLM Call log ──────────────────────────────────────────────────────────
+// ── LLM log ───────────────────────────────────────────────────────────────────
 const opIcons = { plan:'🗺', write:'✍', validate:'✅', datagen:'🎲', heal:'🔧', vision:'👁', general:'⚡', record:'🎬' };
 
 function appendLLMRow(d, end) {
   const log = document.getElementById('llmLog');
-  if (log.querySelector('.empty-state')) log.innerHTML = '';
+  if (log.querySelector('.empty')) log.innerHTML = '';
   const row = document.createElement('div');
-  row.className = 'llm-row';
+  row.className = 'llm-row llm-grid';
   row.id = 'llm-' + d.id;
   const isDone = !!end;
   row.innerHTML = `
-    <div class="status-dot${isDone ? (end.success ? '' : ' err') : ' pending'}"></div>
+    <div class="sdot${isDone ? (end.success ? '' : ' err') : ' pending'}"></div>
     <div class="llm-op">${opIcons[d.operation] ?? '⚡'} ${d.operation}</div>
-    <div class="llm-provider">${d.provider}</div>
-    <div>${isDone ? `<div class="latency-bar" style="width:${Math.min(100, end.latencyMs/50)}%"></div><span style="color:var(--dim);font-size:10px;">${end.latencyMs}ms</span>` : '<span style="color:var(--yellow);font-size:10px;">⋯ running</span>'}</div>
-    <div class="llm-tokens">${isDone ? fmtNum((end.inputTokens||0)+(end.outputTokens||0)) : '—'}</div>
+    <div class="llm-prov">${d.provider}</div>
+    <div class="lat-col">${isDone
+      ? `<div class="lat-bar" style="width:${Math.min(100, end.latencyMs / 50)}%"></div><span class="lat-ms">${end.latencyMs}ms</span>`
+      : '<span style="color:var(--yellow);font-size:11px;">⋯ running</span>'
+    }</div>
+    <div class="llm-tok">${isDone ? fmtNum((end.inputTokens||0)+(end.outputTokens||0)) : '—'}</div>
     <div class="llm-cost">${isDone ? '$'+(end.costUsd||0).toFixed(4) : '—'}</div>
   `;
   log.prepend(row);
@@ -388,190 +1156,240 @@ function appendLLMRow(d, end) {
 function updateLLMRow(end) {
   const row = document.getElementById('llm-' + end.id);
   if (!row) { appendLLMRow(end, end); return; }
-  row.querySelector('.status-dot').className = 'status-dot' + (end.success ? '' : ' err');
+  const cacheInfo = end.cacheHitTokens > 0
+    ? `<span style="color:var(--purple2);font-size:10px;">⚡${fmtNum(end.cacheHitTokens)} cached</span>`
+    : '';
   row.innerHTML = `
-    <div class="status-dot${end.success ? '' : ' err'}"></div>
+    <div class="sdot${end.success ? '' : ' err'}"></div>
     <div class="llm-op">${opIcons[end.operation] ?? '⚡'} ${end.operation}</div>
-    <div class="llm-provider">${end.provider}</div>
-    <div><div class="latency-bar" style="width:${Math.min(100, end.latencyMs/50)}%"></div><span style="color:var(--dim);font-size:10px;">${end.latencyMs}ms</span></div>
-    <div class="llm-tokens">${fmtNum((end.inputTokens||0)+(end.outputTokens||0))}</div>
-    <div class="llm-cost ${end.success?'':'err'}">${end.success ? '$'+(end.costUsd||0).toFixed(4) : '❌'}</div>
+    <div class="llm-prov">${end.provider}</div>
+    <div class="lat-col">
+      <div class="lat-bar" style="width:${Math.min(100, end.latencyMs / 50)}%"></div>
+      <span class="lat-ms">${end.latencyMs}ms ${cacheInfo}</span>
+    </div>
+    <div class="llm-tok">${fmtNum((end.inputTokens||0)+(end.outputTokens||0))}</div>
+    <div class="llm-cost${end.success ? '' : ' err'}">${end.success ? '$'+(end.costUsd||0).toFixed(4) : '❌'}</div>
   `;
 }
 
-// ── Healing log ───────────────────────────────────────────────────────────
+// ── Healing ───────────────────────────────────────────────────────────────────
 function appendHealing(d) {
   const log = document.getElementById('healLog');
-  if (log.querySelector('.empty-state')) log.innerHTML = '';
+  if (log.querySelector('.empty')) log.innerHTML = '';
   healCount++;
   document.getElementById('healCount').textContent = healCount;
   const el = document.createElement('div');
-  el.className = 'event';
+  el.className = 'ev-row';
   el.innerHTML = `
-    <div class="event-icon">${d.success ? '✅' : '❌'}</div>
-    <div class="event-body">
-      <div class="event-title">${d.selector}</div>
-      <div class="event-meta">
-        ${d.success ? `<span><span class="tag tag-heal">→ ${d.healed ?? '?'}</span></span>` : '<span class="tag tag-err">no heal found</span>'}
+    <div class="ev-icon">${d.success ? '✅' : '❌'}</div>
+    <div class="ev-body">
+      <div class="ev-title">${escHtml(d.selector)}</div>
+      <div class="ev-meta">
+        ${d.success ? `<span class="tag tag-heal">→ ${escHtml(d.healed ?? '?')}</span>` : '<span class="tag tag-err">no heal found</span>'}
         ${d.fromCache ? '<span class="tag tag-op">cached</span>' : ''}
-        ${d.confidence ? `<span style="color:var(--dim)">${Math.round(d.confidence*100)}% confidence</span>` : ''}
+        ${d.confidence ? `<span>${Math.round(d.confidence * 100)}% conf</span>` : ''}
       </div>
     </div>
-    <div class="event-time">${fmtTime(d.timestamp)}</div>
+    <div class="ev-time">${fmtTime(d.timestamp)}</div>
   `;
   log.prepend(el);
 }
 
-// ── Visual log ────────────────────────────────────────────────────────────
+// ── Visual ────────────────────────────────────────────────────────────────────
 function appendVisual(d) {
   const log = document.getElementById('visualLog');
-  if (log.querySelector('.empty-state')) log.innerHTML = '';
-  const scoreClass = d.passed ? 'high' : d.differences > 3 ? 'low' : 'med';
+  if (log.querySelector('.empty')) log.innerHTML = '';
   const el = document.createElement('div');
-  el.className = 'event';
+  el.className = 'ev-row';
   el.innerHTML = `
-    <div class="event-icon">${d.passed ? '🟢' : '🔴'}</div>
-    <div class="event-body">
-      <div class="event-title">${d.name}</div>
-      <div class="event-meta">
+    <div class="ev-icon">${d.passed ? '🟢' : '🔴'}</div>
+    <div class="ev-body">
+      <div class="ev-title">${escHtml(d.name)}</div>
+      <div class="ev-meta">
         <span class="${d.passed ? 'tag tag-ok' : 'tag tag-err'}">${d.passed ? 'PASS' : 'FAIL'}</span>
-        <span>${d.differences} difference(s)</span>
-        <span style="color:var(--dim);font-size:11px;">${d.summary?.substring(0,80)}</span>
+        <span>${d.differences} diff(s)</span>
+        <span style="color:var(--text2)">${escHtml((d.summary ?? '').substring(0, 65))}</span>
       </div>
     </div>
-    <div class="event-time">${fmtTime(d.timestamp)}</div>
+    <div class="ev-time">${fmtTime(d.timestamp)}</div>
   `;
   log.prepend(el);
 }
 
-// ── Recorder ──────────────────────────────────────────────────────────────
+// ── Recorder ──────────────────────────────────────────────────────────────────
 const recIcons = { navigate:'🔗', click:'🖱', fill:'✏', select:'▾', check:'☑' };
 
-function appendRecorderAction(d) {
+function appendRecAction(d) {
   const log = document.getElementById('recorderLog');
-  if (log.querySelector('.recorder-empty')) log.innerHTML = '';
-  recActionCount++;
-  document.getElementById('recActionCount').textContent = recActionCount + ' actions';
+  if (log.querySelector('.rec-empty')) log.innerHTML = '';
+  recCount++;
+  document.getElementById('recCount').textContent = recCount + ' actions';
   const el = document.createElement('div');
-  el.className = 'event';
+  el.className = 'ev-row';
   el.innerHTML = `
-    <div class="event-icon">${recIcons[d.type] ?? '•'}</div>
-    <div class="event-body">
-      <div class="event-title">${d.selector ?? d.url ?? ''}</div>
-      <div class="event-meta">
-        <span class="tag tag-record">${d.type}</span>
-        ${d.value ? `<span style="color:var(--dim)">"${d.value.substring(0,30)}"</span>` : ''}
-        ${d.text  ? `<span style="color:var(--dim)">${d.text.substring(0,30)}</span>` : ''}
+    <div class="ev-icon">${recIcons[d.type] ?? '•'}</div>
+    <div class="ev-body">
+      <div class="ev-title">${escHtml(d.selector ?? d.url ?? '')}</div>
+      <div class="ev-meta">
+        <span class="tag tag-rec">${d.type}</span>
+        ${d.value ? `<span>"${escHtml(d.value.substring(0,30))}"</span>` : ''}
+        ${d.text  ? `<span>${escHtml(d.text.substring(0,30))}</span>` : ''}
       </div>
     </div>
-    <div class="event-time">${fmtTime(d.timestamp)}</div>
+    <div class="ev-time">${fmtTime(d.timestamp)}</div>
   `;
   log.prepend(el);
 }
 
-// ── Test gen stages ───────────────────────────────────────────────────────
-const stageIcons = { planning:'🗺', writing:'✍', validating:'🔍', complete:'✅', error:'❌' };
-const stageColors = { planning:'var(--yellow)', writing:'var(--blue)', validating:'var(--purple)', complete:'var(--green)', error:'var(--red)' };
+// ── Test generation ───────────────────────────────────────────────────────────
+const stageIcons  = { planning:'🗺', writing:'✍', validating:'🔍', complete:'✅', error:'❌' };
+const stageColors = { planning:'var(--yellow)', writing:'var(--blue)', validating:'var(--purple2)', complete:'var(--green2)', error:'var(--red)' };
 
 function appendTestGen(d) {
   const log = document.getElementById('testgenLog');
-  if (log.querySelector('.empty-state')) log.innerHTML = '';
+  if (log.querySelector('.empty')) log.innerHTML = '';
 
-  // Show generated code in right panel when complete
   if (d.stage === 'complete' && d.output) {
     lastCode = d.output;
-    const codePanel = document.getElementById('generatedCode');
-    codePanel.innerHTML = `<div class="gen-code">${escHtml(d.output)}</div>`;
+    document.getElementById('generatedCode').innerHTML = `<div class="gen-code">${escHtml(d.output)}</div>`;
     document.getElementById('copyBtn').disabled = false;
   }
 
   const el = document.createElement('div');
-  el.className = 'event';
+  el.className = 'ev-row';
   el.innerHTML = `
-    <div class="event-icon">${stageIcons[d.stage] ?? '•'}</div>
-    <div class="event-body">
-      <div class="event-title" style="color:${stageColors[d.stage] ?? 'var(--text)'}">
+    <div class="ev-icon">${stageIcons[d.stage] ?? '•'}</div>
+    <div class="ev-body">
+      <div class="ev-title" style="color:${stageColors[d.stage] ?? 'var(--text)'}">
         ${d.stage.toUpperCase()} — ${d.source}
-        ${d.score != null ? `<span class="score-ring ${d.score>=80?'high':d.score>=60?'med':'low'}" style="float:right">${d.score}</span>` : ''}
+        ${d.score != null
+          ? `<span class="score-ring ${d.score>=80?'high':d.score>=60?'med':'low'}" style="float:right;width:28px;height:28px;font-size:10px;">${d.score}</span>`
+          : ''}
       </div>
-      <div class="event-meta">
-        <span class="tag tag-gen">session ${d.sessionId?.substring(0,8)}</span>
-        ${d.input ? `<span style="color:var(--dim)">"${d.input.substring(0,60)}"</span>` : ''}
+      <div class="ev-meta">
+        <span class="tag tag-gen">session ${(d.sessionId ?? '').substring(0, 8)}</span>
+        ${d.input ? `<span>"${escHtml(d.input.substring(0, 60))}"</span>` : ''}
       </div>
     </div>
-    <div class="event-time">${fmtTime(d.timestamp)}</div>
+    <div class="ev-time">${fmtTime(d.timestamp)}</div>
   `;
   log.prepend(el);
 }
 
-// ── Admin ─────────────────────────────────────────────────────────────────
-function openAdmin() {
-  document.getElementById('adminOverlay').classList.add('open');
-  document.getElementById('adminAlert').style.display = 'none';
-  if (token) { showConfigForm(); fetchConfig(); }
-  else { showAuthForm(); }
+// ── Config fetch ──────────────────────────────────────────────────────────────
+async function fetchConfig() {
+  const r = await fetch(`${BASE}/api/config`);
+  if (!r.ok) return;
+  const c = await r.json();
+
+  // Status panel (left sidebar)
+  document.getElementById('cfgProvider').textContent     = c.provider;
+  document.getElementById('cfgModel').textContent        = c.ollamaModel || c.provider;
+  document.getElementById('cfgAnthropicKey').textContent = c.hasAnthropicKey ? '✓ set' : '✗ not set';
+  document.getElementById('cfgAnthropicKey').className   = 'cfg-val ' + (c.hasAnthropicKey ? 'ok' : 'off');
+
+  const lsOn = c.langSmithEnabled;
+  document.getElementById('cfgLSStatus').innerHTML =
+    `<span class="ls-badge ${lsOn ? 'on' : 'off'}"><span class="ls-badge-dot"></span>${lsOn ? 'ACTIVE' : 'DISABLED'}</span>`;
+  document.getElementById('cfgLSProject').textContent  = c.langSmithProject || '—';
+  document.getElementById('providerBadge').textContent = (c.provider + ' / ' + (c.ollamaModel || 'claude')).toUpperCase();
+
+  // Pre-fill admin form — non-secret fields get current values, secret fields
+  // show a "already set" placeholder so the user knows .env loaded correctly.
+  document.getElementById('cfgProvSel').value     = c.provider;
+  document.getElementById('cfgOllamaModel').value = c.ollamaModel || '';
+  document.getElementById('cfgLSProj').value      = c.langSmithProject || '';
+
+  // Secret key fields: never echoed from server for security.
+  // Show clear placeholder so the user sees the key is already active from .env.
+  document.getElementById('cfgKeyInput').placeholder =
+    c.hasAnthropicKey ? '✓ Already set in .env — leave blank to keep' : 'sk-ant-…';
+  document.getElementById('cfgLSKey').placeholder =
+    c.hasLangSmithKey ? '✓ Already set in .env — leave blank to keep' : 'lsv2_pt_…';
+  // Clear stale values that were manually typed in a previous open
+  if (c.hasAnthropicKey) document.getElementById('cfgKeyInput').value = '';
+  if (c.hasLangSmithKey) document.getElementById('cfgLSKey').value    = '';
 }
 
+// ── Admin ─────────────────────────────────────────────────────────────────────
+async function openAdmin() {
+  document.getElementById('adminOverlay').classList.add('open');
+  document.getElementById('adminAlert').style.display = 'none';
+  await fetchConfig();
+  if (token) {
+    // Validate the stored token is still accepted by the server.
+    // Token becomes stale when server restarts with a different ADMIN_SECRET.
+    const check = await fetch(`${BASE}/api/auth`, {
+      headers: { Authorization: 'Bearer ' + token },
+    }).catch(() => ({ ok: false }));
+    if (check.ok) { showCfgForm(); }
+    else {
+      token = ''; localStorage.removeItem('ai-ops-token');
+      showAlert('Session expired — please re-authenticate', true);
+      showAuthForm();
+    }
+  } else {
+    showAuthForm();
+  }
+}
 function closeAdmin(e) {
   if (!e || e.target === document.getElementById('adminOverlay'))
     document.getElementById('adminOverlay').classList.remove('open');
 }
-
 function showAuthForm() {
-  document.getElementById('authForm').style.display = 'block';
+  document.getElementById('authForm').style.display   = 'block';
   document.getElementById('configForm').style.display = 'none';
 }
-
-function showConfigForm() {
-  document.getElementById('authForm').style.display = 'none';
+function showCfgForm() {
+  document.getElementById('authForm').style.display   = 'none';
   document.getElementById('configForm').style.display = 'block';
 }
-
 async function doAuth() {
-  const pwd = document.getElementById('adminPassword').value;
-  const r = await fetch(`${BASE}/api/auth`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password:pwd}) });
+  const pwd = document.getElementById('adminPwd').value;
+  const r   = await fetch(`${BASE}/api/auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pwd }),
+  });
   const data = await r.json();
   if (r.ok) {
     token = data.token;
     localStorage.setItem('ai-ops-token', token);
     showAlert('Authenticated ✓', false);
-    setTimeout(() => { showConfigForm(); fetchConfig(); }, 600);
+    setTimeout(() => { showCfgForm(); fetchConfig(); }, 600);
   } else {
     showAlert(data.error ?? 'Auth failed', true);
   }
 }
-
-async function fetchConfig() {
-  const headers = token ? { Authorization: 'Bearer ' + token } : {};
-  const r = await fetch(`${BASE}/api/config`, { headers });
-  if (!r.ok) { token = ''; localStorage.removeItem('ai-ops-token'); return; }
-  const c = await r.json();
-  document.getElementById('cfgProvider').textContent = c.provider;
-  document.getElementById('cfgModel').textContent = c.ollamaModel || c.provider;
-  document.getElementById('cfgAnthropicKey').textContent = c.hasAnthropicKey ? '✓ set' : '✗ not set';
-  document.getElementById('cfgAnthropicKey').className = 'config-val ' + (c.hasAnthropicKey ? 'ok' : 'off');
-  document.getElementById('cfgLangSmith').textContent = c.langSmithEnabled ? '✓ enabled' : '✗ disabled';
-  document.getElementById('cfgLangSmith').className = 'config-val ' + (c.langSmithEnabled ? 'ok' : 'off');
-  document.getElementById('providerBadge').textContent = c.provider + ' / ' + (c.ollamaModel || 'claude');
-  // Pre-fill config form
-  document.getElementById('cfgProviderSelect').value = c.provider;
-  document.getElementById('cfgOllamaModel').value = c.ollamaModel || '';
-}
-
 async function saveConfig() {
+  const lsKeyVal = document.getElementById('cfgLSKey').value.trim();
   const body = {
-    provider:       document.getElementById('cfgProviderSelect').value,
-    anthropicApiKey:document.getElementById('cfgKeyInput').value || undefined,
-    ollamaModel:    document.getElementById('cfgOllamaModel').value || undefined,
-    langSmithApiKey:document.getElementById('cfgLSKey').value || undefined,
-    langSmithProject:document.getElementById('cfgLSProject').value || undefined,
-    langSmithEnabled: !!(document.getElementById('cfgLSKey').value),
+    provider:         document.getElementById('cfgProvSel').value,
+    anthropicApiKey:  document.getElementById('cfgKeyInput').value.trim()  || undefined,
+    ollamaModel:      document.getElementById('cfgOllamaModel').value.trim() || undefined,
+    langSmithApiKey:  lsKeyVal || undefined,
+    langSmithProject: document.getElementById('cfgLSProj').value.trim()    || undefined,
+    // Enable LangSmith if a new key was entered, or keep enabled if already set and no key change
+    langSmithEnabled: lsKeyVal ? true : undefined,
   };
-  const r = await fetch(`${BASE}/api/config`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(body) });
-  if (r.ok) { showAlert('Config saved & applied ✓', false); setTimeout(closeAdmin, 1000); }
-  else showAlert('Failed to save config', true);
+  const r = await fetch(`${BASE}/api/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify(body),
+  });
+  if (r.ok) {
+    showAlert('Config saved & applied ✓', false);
+    fetchConfig();
+    setTimeout(closeAdmin, 1200);
+  } else if (r.status === 401) {
+    // Stale token — force re-authentication
+    token = ''; localStorage.removeItem('ai-ops-token');
+    showAlert('Session expired — please re-authenticate', true);
+    setTimeout(showAuthForm, 1200);
+  } else {
+    showAlert('Failed to save config', true);
+  }
 }
-
 function showAlert(msg, isErr) {
   const el = document.getElementById('adminAlert');
   el.className = 'alert ' + (isErr ? 'alert-err' : 'alert-ok');
@@ -579,7 +1397,7 @@ function showAlert(msg, isErr) {
   el.style.display = 'block';
 }
 
-// ── Misc ──────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -587,30 +1405,26 @@ function switchTab(name, el) {
   document.getElementById('tab-' + name).classList.add('active');
 }
 
+// ── Copy ──────────────────────────────────────────────────────────────────────
 function copyCode() {
   navigator.clipboard.writeText(lastCode);
   const btn = document.getElementById('copyBtn');
-  btn.textContent = 'Copied!';
-  setTimeout(() => btn.textContent = 'Copy', 1500);
+  btn.textContent = 'COPIED!';
+  setTimeout(() => { btn.textContent = 'COPY'; }, 1500);
 }
 
 function refreshConfig() { fetchConfig(); }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtNum(n) {
-  if (n >= 1_000_000) return (n/1_000_000).toFixed(1)+'M';
-  if (n >= 1_000) return (n/1_000).toFixed(1)+'K';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
   return String(n);
 }
+function fmtTime(ts) { return new Date(ts).toISOString().substring(11, 19); }
+function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function fmtTime(ts) {
-  return new Date(ts).toISOString().substring(11,19);
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// Boot
+// ── Boot ──────────────────────────────────────────────────────────────────────
 connect();
 fetchConfig();
 </script>
