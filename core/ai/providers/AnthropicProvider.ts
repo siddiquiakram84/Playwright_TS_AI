@@ -9,7 +9,7 @@ export class AnthropicProvider implements IAIProvider {
   readonly name  = 'anthropic';
   readonly model = ANTHROPIC_MODEL;
 
-  lastUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheHitTokens: 0 };
+  lastUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheHitTokens: 0, cacheWriteTokens: 0 };
 
   private readonly client: Anthropic;
 
@@ -45,14 +45,14 @@ export class AnthropicProvider implements IAIProvider {
     });
 
     this.lastUsage = {
-      inputTokens:    response.usage.input_tokens,
-      outputTokens:   response.usage.output_tokens,
-      cacheHitTokens: response.usage.cache_read_input_tokens ?? 0,
+      inputTokens:      response.usage.input_tokens,
+      outputTokens:     response.usage.output_tokens,
+      cacheHitTokens:   response.usage.cache_read_input_tokens  ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
     };
 
-    if (this.lastUsage.cacheHitTokens > 0) {
-      logger.debug(`[Anthropic] Cache hit — ${this.lastUsage.cacheHitTokens} tokens saved`);
-    }
+    if (this.lastUsage.cacheHitTokens   > 0) logger.debug(`[Anthropic] Cache hit   — ${this.lastUsage.cacheHitTokens} tokens saved`);
+    if (this.lastUsage.cacheWriteTokens > 0) logger.debug(`[Anthropic] Cache write — ${this.lastUsage.cacheWriteTokens} tokens stored`);
 
     const textBlock = response.content.find(b => b.type === 'text');
     return textBlock && textBlock.type === 'text' ? textBlock.text : '';
@@ -88,9 +88,10 @@ export class AnthropicProvider implements IAIProvider {
     });
 
     this.lastUsage = {
-      inputTokens:    response.usage.input_tokens,
-      outputTokens:   response.usage.output_tokens,
-      cacheHitTokens: response.usage.cache_read_input_tokens ?? 0,
+      inputTokens:      response.usage.input_tokens,
+      outputTokens:     response.usage.output_tokens,
+      cacheHitTokens:   response.usage.cache_read_input_tokens  ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
     };
 
     const textBlock = response.content.find(b => b.type === 'text');

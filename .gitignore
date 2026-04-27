@@ -82,3 +82,15 @@ dashboard/jarvis/metrics-history.json
 
 # Vector memory index (generated — do not commit large binary embeddings)
 core/ai/memory/.index/
+
+# AI Ops SQLite database — runtime data, not source
+dashboard/ai-ops/aiops.db
+dashboard/ai-ops/aiops.db-shm
+dashboard/ai-ops/aiops.db-wal
+
+# Recorder session captures — may contain sensitive URLs
+core/ai/recorder/last-session.json
+
+# Personal resume files
+Resume_*.html
+Resume_*.pdf

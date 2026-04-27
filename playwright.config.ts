@@ -130,6 +130,28 @@ export default defineConfig({
         },
       },
     },
+
+    // ── Responsive UI — viewport + zoom matrix ───────────────────────────────
+    {
+      name: 'responsive',
+      testDir: './aut/tests/ai/responsive',
+      timeout: AI_TIMEOUT,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.UI_BASE_URL,
+        // Viewport is overridden per-profile inside each test
+        viewport:          { width: 1280, height: 720 },
+        actionTimeout:     AI_TIMEOUT,
+        navigationTimeout: AI_TIMEOUT,
+        launchOptions: {
+          args: [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-web-security',  // needed for cross-origin iframe viewport tests
+          ],
+        },
+      },
+    },
   ],
 
   outputDir: 'dashboard/playwright/test-results',

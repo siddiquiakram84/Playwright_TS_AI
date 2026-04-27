@@ -1,0 +1,7 @@
+{
+  "/api/metrics/route": "app/api/metrics/route.js",
+  "/api/admin/route": "app/api/admin/route.js",
+  "/api/jarvis/route": "app/api/jarvis/route.js",
+  "/ai-ops/page": "app/ai-ops/page.js",
+  "/jarvis/page": "app/jarvis/page.js"
+}

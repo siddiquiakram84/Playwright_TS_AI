@@ -7,12 +7,16 @@ export { TestGenerator }                         from './TestGenerator';
 export { SelfHealingLocator, SelfHealingPage }   from './SelfHealingLocator';
 export { VisualAITester }                        from './VisualAITester';
 export { TestDataFactory }                       from './TestDataFactory';
+export { ResponsiveTester, VIEWPORT_MATRIX }     from './ResponsiveTester';
+export type { ViewportProfile, ResponsiveResult, ResponsiveIssue } from './ResponsiveTester';
 
 // ── Multi-agent pipeline ─────────────────────────────────────────────────────
 export { AgentGraph, linearGraph, emitStage }    from './agents/AgentGraph';
 export { testPlannerAgent }                      from './agents/TestPlannerAgent';
 export { testWriterAgent }                       from './agents/TestWriterAgent';
 export { testValidatorAgent }                    from './agents/TestValidatorAgent';
+export { squishtestWriterAgent }                 from './agents/SquishtestWriterAgent';
+export type { SquishtestResult }                 from './agents/SquishtestWriterAgent';
 export type { AgentState, AgentFn }              from './agents/AgentGraph';
 export type { PlannerState }                     from './agents/TestPlannerAgent';
 export type { WriterState }                      from './agents/TestWriterAgent';
@@ -30,7 +34,9 @@ export { langSmithTracer }                       from './ops/LangSmithTracer';
 export type {
   LLMStartEvent, LLMEndEvent,
   HealingEvent, VisualEvent, RecorderActionEvent, TestGenEvent,
+  BudgetExceededEvent,
 }                                                from './ops/AIEventBus';
+export type { BudgetLimits, BudgetCheckResult }  from './ops/CostTracker';
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
 export {

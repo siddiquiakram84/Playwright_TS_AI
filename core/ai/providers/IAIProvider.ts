@@ -21,9 +21,11 @@ export interface VisionParams extends CompleteParams {
 
 /** Token usage from the last complete/completeWithVision/completeJson call. */
 export interface TokenUsage {
-  inputTokens:    number;
-  outputTokens:   number;
-  cacheHitTokens: number;
+  inputTokens:      number;
+  outputTokens:     number;
+  cacheHitTokens:   number;
+  /** Tokens written into a new Anthropic cache entry (billed at 1.25× input rate). */
+  cacheWriteTokens: number;
 }
 
 export interface IAIProvider {

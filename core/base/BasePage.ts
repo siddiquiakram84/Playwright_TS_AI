@@ -1,10 +1,22 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { logger } from '../utils/logger';
+import { SelfHealingLocator } from '../ai/SelfHealingLocator';
+import { AIClient } from '../ai/AIClient';
 
 export abstract class BasePage {
   constructor(protected readonly page: Page) {}
 
   abstract get url(): string;
+
+  /**
+   * Returns a self-healing locator for selectors that may be unstable across
+   * deployments. On first failure the AI analyses the live DOM and caches
+   * the healed selector — subsequent calls use the cache (no AI cost).
+   * Use this for any locator defined by class/position rather than data-qa.
+   */
+  protected healingLocator(selector: string): SelfHealingLocator {
+    return new SelfHealingLocator(this.page, selector, AIClient.getInstance());
+  }
 
   async navigate(): Promise<void> {
     logger.info(`Navigating to ${this.url}`);

@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Page, Locator } from '@playwright/test';
 import { AIClient } from './AIClient';
-import { HealedSelectorsCache, SelectorAlternative } from './types';
+import { HealedSelectorsCache, SelectorAlternative, ElementFingerprint } from './types';
 import { SelectorAlternativesSchema } from './schema';
 import { aiEventBus } from './ops/AIEventBus';
 import { logger } from '../utils/logger';
@@ -26,6 +26,34 @@ async function loadCache(): Promise<HealedSelectorsCache> {
   }
 }
 
+async function captureFingerprint(page: Page, selector: string): Promise<ElementFingerprint> {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return { role: null, text: null, testId: null, name: null, ariaLabel: null };
+    return {
+      role:      el.getAttribute('role'),
+      text:      el.textContent?.trim().substring(0, 100) ?? null,
+      testId:    el.getAttribute('data-testid') ?? el.getAttribute('data-qa'),
+      name:      el.getAttribute('name'),
+      ariaLabel: el.getAttribute('aria-label'),
+    };
+  }, selector);
+}
+
+function fingerprintMatches(stored: ElementFingerprint, live: ElementFingerprint): boolean {
+  // At least two non-null fields must match; a fully null stored fingerprint is treated as unknown.
+  const fields: (keyof ElementFingerprint)[] = ['role', 'testId', 'name', 'ariaLabel', 'text'];
+  let matches = 0;
+  let comparable = 0;
+  for (const f of fields) {
+    if (stored[f] !== null) {
+      comparable++;
+      if (stored[f] === live[f]) matches++;
+    }
+  }
+  return comparable === 0 || matches >= Math.min(2, comparable);
+}
+
 async function saveCache(cache: HealedSelectorsCache): Promise<void> {
   await fs.mkdir(path.dirname(CACHE_PATH), { recursive: true });
   await fs.writeFile(CACHE_PATH, JSON.stringify(cache, null, 2), 'utf8');
@@ -41,8 +69,28 @@ async function healSelector(
 
   const cache = await loadCache();
   if (cache[cacheKey]) {
-    logger.info(`[SelfHealing] Cache hit for "${selector}" → "${cache[cacheKey].healed}"`);
-    return cache[cacheKey].healed;
+    const entry = cache[cacheKey];
+    if (entry.fingerprint) {
+      try {
+        await page.locator(entry.healed).waitFor({ state: 'attached', timeout: HEAL_TIMEOUT });
+        const live = await captureFingerprint(page, entry.healed);
+        if (fingerprintMatches(entry.fingerprint, live)) {
+          logger.info(`[SelfHealing] Cache hit (fingerprint ok) "${selector}" → "${entry.healed}"`);
+          return entry.healed;
+        }
+        logger.warn(`[SelfHealing] Cached selector "${entry.healed}" resolves but fingerprint drifted — re-healing`);
+        delete cache[cacheKey];
+        await saveCache(cache);
+      } catch {
+        // cached selector no longer attaches; fall through to re-heal
+        delete cache[cacheKey];
+        await saveCache(cache);
+      }
+    } else {
+      // legacy entry without fingerprint — trust it but upgrade on next heal
+      logger.info(`[SelfHealing] Cache hit (no fingerprint) "${selector}" → "${entry.healed}"`);
+      return entry.healed;
+    }
   }
 
   logger.warn(`[SelfHealing] Selector failed: "${selector}" on ${url} — invoking AI healing…`);
@@ -94,12 +142,14 @@ async function healSelector(
         `[SelfHealing] ✔ Healed: "${selector}" → "${alt.selector}" ` +
         `(confidence: ${alt.confidence}, reason: ${alt.reasoning})`,
       );
+      const fingerprint = await captureFingerprint(page, alt.selector);
       cache[cacheKey] = {
         original: selector,
         healed: alt.selector,
         url,
         confidence: alt.confidence,
         timestamp: new Date().toISOString(),
+        fingerprint,
       };
       await saveCache(cache);
       aiEventBus.emitHealing({

@@ -64,21 +64,32 @@ export interface TestGenEvent {
 }
 
 export interface AdminEvent {
-  action:    'provider-changed' | 'key-updated' | 'config-changed';
+  action:    'provider-changed' | 'key-updated' | 'config-changed' | 'provider-fallback'
+           | 'session-reset'    | 'client-reset' | 'provider-switch';
   provider?: string;
   timestamp: number;
+}
+
+export interface BudgetExceededEvent {
+  type:             'token' | 'cost';
+  used:             number;
+  limit:            number;
+  calls:            number;
+  estimatedCostUsd: number;
+  timestamp:        number;
 }
 
 // ── Event map (typed EventEmitter) ────────────────────────────────────────────
 
 export interface AIEvents {
-  'llm:start':      [event: LLMStartEvent];
-  'llm:end':        [event: LLMEndEvent];
-  'healing':        [event: HealingEvent];
-  'visual':         [event: VisualEvent];
-  'recorder:action':[event: RecorderActionEvent];
-  'testgen':        [event: TestGenEvent];
-  'admin':          [event: AdminEvent];
+  'llm:start':        [event: LLMStartEvent];
+  'llm:end':          [event: LLMEndEvent];
+  'healing':          [event: HealingEvent];
+  'visual':           [event: VisualEvent];
+  'recorder:action':  [event: RecorderActionEvent];
+  'testgen':          [event: TestGenEvent];
+  'admin':            [event: AdminEvent];
+  'budget:exceeded':  [event: BudgetExceededEvent];
 }
 
 // ── Singleton event bus ───────────────────────────────────────────────────────
@@ -152,6 +163,11 @@ class AIEventBus extends EventEmitter {
   emitAdmin(event: AdminEvent): void {
     this.emit('admin', event);
     this.forward('admin', event);
+  }
+
+  emitBudgetExceeded(event: BudgetExceededEvent): void {
+    this.emit('budget:exceeded', event);
+    this.forward('budget:exceeded', event);
   }
 }
 

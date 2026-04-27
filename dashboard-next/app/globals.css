@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #020810;
+  --surface:   #07111e;
+  --surface2:  #0d1c2e;
+  --surface3:  #122336;
+  --border:    #163450;
+  --border2:   #1e4668;
+  --text:      #d4edf8;
+  --text2:     #8bbdd6;
+  --muted:     #5090b0;
+  --dim:       #35698a;
+  --cyan:      #00d4ff;
+  --cyan2:     #52e8ff;
+  --purple:    #9d6cf0;
+  --purple2:   #c09cf8;
+  --green:     #00e89a;
+  --green2:    #54ffbc;
+  --red:       #ff3d5a;
+  --yellow:    #ffd740;
+  --orange:    #ff7a40;
+  --blue:      #4da6ff;
+  --glow-c:    0 0 10px rgba(0,212,255,.55), 0 0 28px rgba(0,212,255,.18);
+  --glow-g:    0 0 10px rgba(0,232,154,.55), 0 0 28px rgba(0,232,154,.18);
+  --glow-p:    0 0 10px rgba(157,108,240,.55), 0 0 28px rgba(157,108,240,.18);
+  --glow-r:    0 0 10px rgba(255,61,90,.55),  0 0 28px rgba(255,61,90,.18);
+  --glow-y:    0 0 10px rgba(255,215,64,.55), 0 0 28px rgba(255,215,64,.18);
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-space-mono), 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ── Background overlays ───────────────────────────────────────────────────── */
+.scanlines {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px
+  );
+}
+.vignette {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,212,255,.2); border-radius: 2px; }
+
+/* ── Corner bracket mixin ──────────────────────────────────────────────────── */
+@layer components {
+  /* Panel with corner brackets */
+  .panel-corners {
+    position: relative;
+  }
+  .panel-corners::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 16px; height: 16px;
+    border-top: 1px solid rgba(0,212,255,.4);
+    border-left: 1px solid rgba(0,212,255,.4);
+    z-index: 3; pointer-events: none;
+  }
+  .panel-corners::after {
+    content: ''; position: absolute; bottom: 0; right: 0;
+    width: 16px; height: 16px;
+    border-bottom: 1px solid rgba(0,212,255,.4);
+    border-right: 1px solid rgba(0,212,255,.4);
+    z-index: 3; pointer-events: none;
+  }
+
+  /* Panel header scan animation */
+  .panel-hdr-scan::before {
+    content: ''; position: absolute; inset: 0; width: 42%;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,.06), transparent);
+    animation: hScan 7s linear infinite; pointer-events: none;
+  }
+
+  /* Status dots */
+  .sdot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    background: var(--green); box-shadow: var(--glow-g);
+    position: relative;
+  }
+  .sdot::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: inherit; animation: dPing 2s ease-out infinite;
+  }
+  .sdot-pending { background: var(--yellow); box-shadow: var(--glow-y); animation: lPulse .9s ease-in-out infinite; }
+  .sdot-pending::after { display: none; }
+  .sdot-error { background: var(--red); box-shadow: var(--glow-r); }
+  .sdot-error::after { display: none; }
+
+  /* Tags */
+  .tag       { padding: 2px 7px; border-radius: 3px; font-family: var(--font-orbitron); font-size: 9px; font-weight: 700; letter-spacing: .5px; white-space: nowrap; }
+  .tag-op    { background: rgba(157,108,240,.15); color: var(--purple2); border: 1px solid rgba(157,108,240,.3); }
+  .tag-ok    { background: rgba(0,232,154,.12);   color: var(--green2);  border: 1px solid rgba(0,232,154,.28); }
+  .tag-err   { background: rgba(255,61,90,.12);   color: var(--red);     border: 1px solid rgba(255,61,90,.28); }
+  .tag-gen   { background: rgba(0,212,255,.12);   color: var(--cyan2);   border: 1px solid rgba(0,212,255,.28); }
+  .tag-heal  { background: rgba(0,232,154,.12);   color: var(--green2);  border: 1px solid rgba(0,232,154,.28); }
+  .tag-warn  { background: rgba(255,215,64,.12);  color: var(--yellow);  border: 1px solid rgba(255,215,64,.28); }
+
+  /* Top nav links */
+  .nav-link {
+    font-family: var(--font-orbitron); font-size: 9px; letter-spacing: 1.5px;
+    padding: 3px 12px; border-radius: 2px; border: 1px solid transparent;
+    color: var(--muted); text-decoration: none; transition: color .15s, border-color .15s, background .15s;
+  }
+  .nav-link:hover {
+    color: var(--cyan); border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.06);
+  }
+
+  /* Orbitron heading */
+  .orb       { font-family: var(--font-orbitron); }
+  .orb-label { font-family: var(--font-orbitron); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+  /* Latency bar */
+  .lat-bar {
+    height: 3px; border-radius: 2px; min-width: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    box-shadow: 0 0 5px rgba(0,212,255,.35);
+    transition: width .4s ease-out;
+  }
+
+  /* Footer cost-bar shimmer */
+  .cost-shimmer {
+    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--green));
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+  }
+
+  /* Header scan line */
+  .header-scan::after {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 15%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,.08), transparent);
+    animation: hScan 9s linear infinite; pointer-events: none;
+  }
+
+  /* Tab system */
+  .tab-btn {
+    padding: 10px 18px;
+    font-family: var(--font-orbitron); font-size: 10px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+  }
+  .tab-btn:hover { color: var(--text2); }
+  .tab-btn.active {
+    color: var(--cyan); border-bottom-color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,212,255,.5);
+  }
+}

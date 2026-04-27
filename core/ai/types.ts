@@ -1,9 +1,18 @@
+export interface ElementFingerprint {
+  role: string | null;
+  text: string | null;
+  testId: string | null;
+  name: string | null;
+  ariaLabel: string | null;
+}
+
 export interface HealedSelector {
   original: string;
   healed: string;
   url: string;
   confidence: number;
   timestamp: string;
+  fingerprint?: ElementFingerprint;
 }
 
 export interface HealedSelectorsCache {

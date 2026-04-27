@@ -19,7 +19,7 @@ interface OllamaChatResponse {
 export class OllamaProvider implements IAIProvider {
   readonly name = 'ollama';
 
-  lastUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheHitTokens: 0 };
+  lastUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheHitTokens: 0, cacheWriteTokens: 0 };
 
   private readonly baseUrl:      string;
   private readonly textModel:    string;
@@ -152,9 +152,10 @@ export class OllamaProvider implements IAIProvider {
     const data = (await response.json()) as OllamaChatResponse;
     // Ollama reports token counts per call — capture them on every chat()
     this.lastUsage = {
-      inputTokens:    data.prompt_eval_count ?? 0,
-      outputTokens:   data.eval_count        ?? 0,
-      cacheHitTokens: 0,
+      inputTokens:      data.prompt_eval_count ?? 0,
+      outputTokens:     data.eval_count        ?? 0,
+      cacheHitTokens:   0,
+      cacheWriteTokens: 0,
     };
     return data.message?.content ?? '';
   }

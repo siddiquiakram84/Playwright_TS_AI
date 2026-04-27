@@ -55,27 +55,27 @@ export class BaseApiClient {
   // ── HTTP verbs ─────────────────────────────────────────────────────────────
 
   protected async get<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const res = await this.send('GET', path, undefined, options);
+    const res = await this.send<T>('GET', path, undefined, options);
     return res.body;
   }
 
   protected async post<T>(path: string, body: unknown, options: RequestOptions = {}): Promise<T> {
-    const res = await this.send('POST', path, body, options);
+    const res = await this.send<T>('POST', path, body, options);
     return res.body;
   }
 
   protected async put<T>(path: string, body: unknown, options: RequestOptions = {}): Promise<T> {
-    const res = await this.send('PUT', path, body, options);
+    const res = await this.send<T>('PUT', path, body, options);
     return res.body;
   }
 
   protected async patch<T>(path: string, body: unknown, options: RequestOptions = {}): Promise<T> {
-    const res = await this.send('PATCH', path, body, options);
+    const res = await this.send<T>('PATCH', path, body, options);
     return res.body;
   }
 
   protected async delete<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const res = await this.send('DELETE', path, undefined, options);
+    const res = await this.send<T>('DELETE', path, undefined, options);
     return res.body;
   }
 
