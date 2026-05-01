@@ -10,9 +10,11 @@ import LLMCallLog, {
 } from '@/components/ai-ops/LLMCallLog';
 import TestGenLog, { type TestGenLogRef } from '@/components/ai-ops/TestGenLog';
 import VisualLog,   { type VisualLogRef }   from '@/components/ai-ops/VisualLog';
-import ConfigPanel   from '@/components/ai-ops/ConfigPanel';
-import RecorderPanel from '@/components/ai-ops/RecorderPanel';
-import BudgetModal   from '@/components/ai-ops/BudgetModal';
+import ConfigPanel        from '@/components/ai-ops/ConfigPanel';
+import RecorderPanel      from '@/components/ai-ops/RecorderPanel';
+import OrchestratorPanel  from '@/components/ai-ops/OrchestratorPanel';
+import TicketFeed         from '@/components/ai-ops/TicketFeed';
+import BudgetModal        from '@/components/ai-ops/BudgetModal';
 import { useMetrics } from '@/hooks/useMetrics';
 import { useSSE }     from '@/hooks/useSSE';
 import type { BudgetExceededPayload, BudgetState, SessionMetrics } from '@/types';
@@ -33,12 +35,10 @@ export default function AiOpsPage() {
   const [budget,         setBudget]         = useState<BudgetState>(INIT_BUDGET);
   const [budgetExceeded, setBudgetExceeded] = useState<BudgetExceededPayload | null>(null);
 
-  // Child refs — populated via the onRef callback pattern
   const llmRef     = useRef<LLMCallLogRef | null>(null);
   const testGenRef = useRef<TestGenLogRef | null>(null);
   const visualRef  = useRef<VisualLogRef  | null>(null);
 
-  // ── SSE handlers (all stable via useCallback) ─────────────────────────────
   const onLLMStart = useCallback((d: unknown) => llmRef.current?.onLLMStart(d), []);
   const onLLMEnd   = useCallback((d: unknown) => llmRef.current?.onLLMEnd(d),   []);
   const onTestGen  = useCallback((d: unknown) => testGenRef.current?.onTestGen(d), []);
@@ -80,7 +80,6 @@ export default function AiOpsPage() {
     { onOpen, onClose },
   );
 
-  // ── Cost bar ──────────────────────────────────────────────────────────────
   const costMax = budget.costLimitUsd > 0
     ? budget.costLimitUsd
     : Math.max(0.01, metrics.estimatedCostUsd * 2);
@@ -88,7 +87,8 @@ export default function AiOpsPage() {
 
   return (
     <div className="relative z-10 flex flex-col h-screen overflow-hidden">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+
+      {/* ── Header ────────────────────────────────────────────────────────── */}
       <Header
         metrics={metrics}
         totalTokens={totalTokens}
@@ -96,9 +96,13 @@ export default function AiOpsPage() {
         provider={provider}
       />
 
-      {/* ── 3-column main grid ───────────────────────────────────────────── */}
-      <main className="flex-1 grid grid-cols-ai-ops overflow-hidden">
-        {/* Left — Config + Budget */}
+      {/* ── 4-column main grid ─────────────────────────────────────────────── */}
+      <main className="flex-1 grid overflow-hidden" style={{
+        gridTemplateColumns: 'minmax(220px,260px) minmax(320px,1fr) minmax(240px,280px) minmax(260px,300px)',
+        minWidth: 0,
+      }}>
+
+        {/* Col 1 — Config */}
         <Panel>
           <ConfigPanel
             budget={budget}
@@ -107,10 +111,9 @@ export default function AiOpsPage() {
           />
         </Panel>
 
-        {/* Center — LLM / TestGen / Visual */}
+        {/* Col 2 — Log tabs */}
         <Panel className="border-x border-border">
           <TabBar active={activeTab} onChange={setActiveTab} />
-
           <div className={activeTab === 'llm'     ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
             <LLMCallLog onRef={ref => { llmRef.current = ref; }} />
           </div>
@@ -122,18 +125,32 @@ export default function AiOpsPage() {
           </div>
         </Panel>
 
-        {/* Right — Test Generator + Auto-Healer info */}
+        {/* Col 3 — AI Orchestrator */}
+        <Panel className="border-r border-border">
+          <OrchestratorPanel />
+        </Panel>
+
+        {/* Col 4 — Ticket feed (top) + Test generator (bottom) */}
         <Panel>
-          <RecorderPanel />
+          {/* Use a proper flex column with explicit flex-basis so neither child
+              uses a height% that fights against the flex container */}
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className="overflow-hidden border-b border-border" style={{ flex: '1 1 0', minHeight: 0 }}>
+              <TicketFeed />
+            </div>
+            <div className="overflow-hidden" style={{ flex: '0 0 44%' }}>
+              <RecorderPanel />
+            </div>
+          </div>
         </Panel>
       </main>
 
-      {/* ── Footer cost bar ──────────────────────────────────────────────── */}
+      {/* ── Footer cost bar ────────────────────────────────────────────────── */}
       <footer
         className="flex-shrink-0 flex items-center gap-4 px-5 py-[7px] border-t"
-        style={{ borderColor: 'var(--border2)', background: 'rgba(0,0,0,.45)' }}
+        style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
       >
-        <span className="orb text-[9px] tracking-[1.5px] text-muted uppercase flex-shrink-0">
+        <span className="text-[9px] font-semibold tracking-[1.5px] text-muted uppercase flex-shrink-0">
           Session Cost
         </span>
         <div className="flex-1 h-[4px] bg-surface3 rounded-full overflow-hidden">
@@ -142,10 +159,7 @@ export default function AiOpsPage() {
             style={{ width: `${costPct}%` }}
           />
         </div>
-        <span
-          className="orb text-[11px] font-bold text-cyan tabular-nums flex-shrink-0"
-          style={{ textShadow: 'var(--glow-c)' }}
-        >
+        <span className="text-[12px] font-semibold text-cyan tabular-nums flex-shrink-0 font-mono">
           ${metrics.estimatedCostUsd.toFixed(4)}
         </span>
         {budget.costLimitUsd > 0 && (
@@ -158,7 +172,6 @@ export default function AiOpsPage() {
         </span>
       </footer>
 
-      {/* ── Budget exceeded modal (blocking) ─────────────────────────────── */}
       {budgetExceeded && (
         <BudgetModal
           payload={budgetExceeded}

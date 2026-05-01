@@ -17,31 +17,20 @@ function fmtNum(n: number): string {
   return String(n);
 }
 
-function HexLogo() {
+function Mark() {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden>
-      <polygon
-        points="16,2 28,9 28,23 16,30 4,23 4,9"
-        fill="none" stroke="rgba(0,212,255,.35)" strokeWidth="1"
-      />
-      <polygon
-        points="16,6 25,11 25,21 16,26 7,21 7,11"
-        fill="rgba(0,212,255,.08)" stroke="#00d4ff" strokeWidth="1.3"
-        className="animate-hex-spin"
-        style={{ transformOrigin: '16px 16px' }}
-      />
-      <text
-        x="16" y="20" textAnchor="middle"
-        fontFamily="Orbitron,sans-serif" fontSize="8" fontWeight="900" fill="#00d4ff"
-      >
-        AI
-      </text>
-    </svg>
+    <div style={{
+      width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+      background: 'var(--cyan)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '.5px' }}>AI</span>
+    </div>
   );
 }
 
 function Clock() {
-  const [time, setTime] = useState('');
+  const [time, setTime] = useState('--:--:--');
   useEffect(() => {
     function tick() {
       const d = new Date();
@@ -56,112 +45,111 @@ function Clock() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div
-      className="mx-auto orb text-[16px] font-bold tracking-[4px] text-cyan"
-      style={{ textShadow: 'var(--glow-c)' }}
-    >
+    <div className="hidden sm:block text-[14px] font-semibold tracking-[3px] text-text2 tabular-nums font-mono flex-shrink-0 mx-auto">
       {time}
     </div>
   );
 }
 
+function Sep() {
+  return <div className="w-px self-stretch" style={{ background: 'var(--border2)', minHeight: 20 }} />;
+}
+
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-right">
-      <div
-        className="orb text-[18px] font-bold text-cyan tabular-nums leading-none"
-        style={{ textShadow: 'var(--glow-c)' }}
-      >
+    <div className="text-center min-w-[48px]">
+      <div className="text-[15px] font-bold text-text tabular-nums leading-none font-mono">
         {value}
       </div>
-      <div className="orb text-[9px] tracking-[1.5px] text-muted uppercase mt-[2px]">{label}</div>
+      <div className="text-[9px] text-muted mt-[3px] uppercase tracking-[.5px]">{label}</div>
     </div>
   );
 }
 
-function Sep() {
-  return (
-    <div
-      className="w-px h-[30px]"
-      style={{ background: 'linear-gradient(180deg, transparent, var(--border2), transparent)' }}
-    />
-  );
-}
-
 export default function Header({ metrics, totalTokens, connected, provider }: HeaderProps) {
-  const [adminOpen,      setAdminOpen]      = useState(false);
-  const [liveProvider,   setLiveProvider]   = useState(provider);
+  const [adminOpen,    setAdminOpen]    = useState(false);
+  const [liveProvider, setLiveProvider] = useState(provider);
 
-  // Keep liveProvider in sync if parent prop changes via SSE admin event
   useEffect(() => { setLiveProvider(provider); }, [provider]);
+
   return (
     <>
     <header
-      className="header-scan flex-shrink-0 h-14 flex items-center gap-[14px] px-5 overflow-hidden relative z-10"
+      className="flex-shrink-0 flex items-center gap-3 px-4 relative z-10"
       style={{
-        background:   'linear-gradient(90deg, #030d1a 0%, #071525 50%, #030d1a 100%)',
-        borderBottom: '1px solid var(--border2)',
-        boxShadow:    '0 2px 20px rgba(0,0,0,.7), 0 1px 0 rgba(0,212,255,.15)',
+        height:       52,
+        background:   'var(--surface)',
+        borderBottom: '1px solid var(--border)',
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-[10px] flex-shrink-0">
-        <div style={{ filter: 'drop-shadow(0 0 7px rgba(0,212,255,.6))' }}>
-          <HexLogo />
-        </div>
-        <div>
-          <div
-            className="orb text-[16px] font-black tracking-[5px] text-cyan"
-            style={{ textShadow: 'var(--glow-c)' }}
-          >
-            AI OPS
-          </div>
-          <div className="orb text-[9px] tracking-[3px] text-muted mt-[1px]">
-            COMMAND CENTER
-          </div>
+      <div className="flex items-center gap-[9px] flex-shrink-0">
+        <Mark />
+        <div className="hidden sm:block">
+          <div className="text-[13px] font-bold tracking-[2.5px] text-text leading-none">AI OPS</div>
+          <div className="text-[9px] tracking-[2px] text-muted mt-[2px]">OPERATIONS</div>
         </div>
       </div>
 
       {/* Provider badge */}
       <div
-        className="orb text-[10px] font-bold tracking-[1px] px-[11px] py-1 rounded-[3px] whitespace-nowrap text-cyan2 flex-shrink-0"
-        style={{ background: 'rgba(0,212,255,.09)', border: '1px solid rgba(0,212,255,.3)' }}
+        className="flex-shrink-0 text-[10px] font-bold tracking-[.5px] px-[9px] py-[4px] rounded-[4px] text-cyan2"
+        style={{ background: 'rgba(59,130,246,.1)', border: '1px solid rgba(59,130,246,.2)' }}
       >
-        {provider.toUpperCase()}
+        {liveProvider.toUpperCase()}
       </div>
 
       {/* Live badge */}
       <div
-        className="flex items-center gap-[7px] orb text-[10px] font-bold tracking-[1px] px-[11px] py-1 rounded-[3px] text-green2 flex-shrink-0"
-        style={{ background: 'rgba(0,232,154,.09)', border: '1px solid rgba(0,232,154,.3)' }}
+        className="flex-shrink-0 flex items-center gap-[6px] text-[10px] font-semibold tracking-[.5px] px-[9px] py-[4px] rounded-[4px]"
+        style={{
+          background: connected ? 'rgba(34,197,94,.08)' : 'rgba(245,158,11,.08)',
+          border:     connected ? '1px solid rgba(34,197,94,.22)' : '1px solid rgba(245,158,11,.22)',
+          color:      connected ? 'var(--green2)' : 'var(--yellow)',
+        }}
       >
         <span
-          className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${connected ? 'animate-live-pulse' : ''}`}
-          style={{
-            background: connected ? 'var(--green)' : 'var(--yellow)',
-            boxShadow:  connected ? 'var(--glow-g)' : 'var(--glow-y)',
-          }}
+          className={`w-[5px] h-[5px] rounded-full flex-shrink-0 ${connected ? 'animate-live-pulse' : ''}`}
+          style={{ background: connected ? 'var(--green)' : 'var(--yellow)' }}
         />
         {connected ? 'LIVE' : 'CONNECTING'}
       </div>
 
+      {/* Clock — centred, hidden on very narrow viewports */}
       <Clock />
 
-      {/* Stats */}
-      <div className="flex items-center gap-4 ml-auto">
+      {/* Right side — stats + admin */}
+      <div className="flex items-center gap-3 ml-auto flex-shrink-0">
         <Sep />
-        <Stat value={String(metrics.calls)} label="Calls" />
+        <Stat value={String(metrics.calls)}                    label="Calls"  />
         <Sep />
-        <Stat value={fmtNum(totalTokens)} label="Tokens" />
+        <Stat value={fmtNum(totalTokens)}                      label="Tokens" />
         <Sep />
-        <Stat value={`$${metrics.estimatedCostUsd.toFixed(3)}`} label="Cost" />
+        <Stat value={`$${metrics.estimatedCostUsd.toFixed(3)}`} label="Cost"  />
+        <Sep />
+        {/* LangSmith traces link */}
+        <a
+          href="https://smith.langchain.com/o/playwright-project"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open LangSmith traces"
+          className="flex items-center gap-[5px] text-[10px] font-semibold px-[10px] py-[5px] rounded-[4px] flex-shrink-0 transition-all"
+          style={{
+            color:      '#f0c040',
+            background: 'rgba(240,192,64,.08)',
+            border:     '1px solid rgba(240,192,64,.25)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(240,192,64,.18)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(240,192,64,.08)'; }}
+        >
+          🔗 LangSmith ↗
+        </a>
         <Sep />
         <button
-          className="orb text-[10px] tracking-[1px] px-[14px] py-[7px] rounded-[3px] border border-border2 bg-surface2 text-text2 cursor-pointer transition-all hover:border-cyan hover:text-cyan"
-          style={{ transition: 'all .15s' }}
           onClick={() => setAdminOpen(true)}
+          className="text-[11px] font-medium px-[12px] py-[6px] rounded-[4px] border border-border2 text-text2 cursor-pointer transition-all hover:border-border hover:text-text hover:bg-surface2 flex-shrink-0"
         >
-          ⚙ ADMIN
+          ⚙ Admin
         </button>
       </div>
     </header>

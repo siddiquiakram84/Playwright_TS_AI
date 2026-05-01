@@ -16,8 +16,23 @@
 
 import * as dotenv from 'dotenv';
 import * as path   from 'path';
+import * as fs     from 'fs';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// Walk up from cwd until we find the project root (contains .env + playwright.config.ts).
+// Handles running from dashboard-next/ where process.cwd() != project root.
+function findProjectRoot(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 4; i++) {
+    if (fs.existsSync(path.join(dir, 'playwright.config.ts'))) return dir;
+    dir = path.dirname(dir);
+  }
+  return process.cwd();
+}
+
+/** Absolute path to the monorepo root — use this instead of process.cwd() for file I/O. */
+export const PROJECT_ROOT = findProjectRoot();
+
+dotenv.config({ path: path.join(PROJECT_ROOT, '.env') });
 
 // ── Per-environment URL matrix ────────────────────────────────────────────────
 
@@ -95,4 +110,17 @@ export const ENV = {
   ollamaModel:       optionalEnv('OLLAMA_MODEL', 'llama3.2'),
   ollamaVisionModel: optionalEnv('OLLAMA_VISION_MODEL', 'llava'),
   anthropicApiKey:   optionalEnv('ANTHROPIC_API_KEY', ''),
+
+  // Jira integration (free Cloud account — REST API v3)
+  jiraBaseUrl:      optionalEnv('JIRA_BASE_URL',       ''),
+  jiraEmail:        optionalEnv('JIRA_EMAIL',          ''),
+  jiraApiToken:     optionalEnv('JIRA_API_TOKEN',      ''),
+  jiraProjectQa:    optionalEnv('JIRA_PROJECT_QA',     'SCRUM'),
+  jiraProjectOps:   optionalEnv('JIRA_PROJECT_OPS',    'OPS'),
+  jiraProjectDev:   optionalEnv('JIRA_PROJECT_DEV',    'DEV'),
+  jiraProjectAuto:  optionalEnv('JIRA_PROJECT_AUTO',   'AUTO'),
+  jiraAssigneeQa:   optionalEnv('JIRA_ASSIGNEE_QA',    ''),
+  jiraAssigneeOps:  optionalEnv('JIRA_ASSIGNEE_OPS',   ''),
+  jiraAssigneeDev:  optionalEnv('JIRA_ASSIGNEE_DEV',   ''),
+  jiraAssigneeAuto: optionalEnv('JIRA_ASSIGNEE_AUTO',  ''),
 } as const;

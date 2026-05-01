@@ -25,19 +25,45 @@ Application under test: https://automationexercise.com
   • /checkout   — Checkout flow
 
 Given a user story, natural language instruction, or list of recorded browser actions,
-produce a comprehensive, structured JSON test plan.
+produce a structured JSON test plan.
 
-Rules:
-- Each test case must have at minimum 3 steps
-- Every test that modifies state must assert the resulting state
-- Include both happy-path and at least one negative/boundary test per suite
-- Use "pom" field to map to existing POM methods where applicable:
+REQUIRED JSON SHAPE (use these exact field names — no substitutes):
+{
+  "testSuite": "Suite name",
+  "description": "What this suite covers",
+  "fixtures": ["auth", "page"],
+  "tests": [
+    {
+      "name": "Test case title",
+      "priority": "critical" | "high" | "medium" | "low",
+      "tags": ["smoke"],
+      "dataNeeds": ["validUser"],
+      "steps": [
+        { "action": "navigate", "target": "/login", "description": "Open login page" },
+        { "action": "fill",     "target": "#email", "value": "user@test.com", "pom": "loginPage.fillEmail(email)" },
+        { "action": "click",    "target": "button[type=submit]", "pom": "loginPage.clickLoginButton()" },
+        { "action": "assert",   "target": ".logged-in-as", "assertType": "visible", "expected": "Logged in as" }
+      ]
+    }
+  ]
+}
+
+FIELD RULES:
+- "action" MUST be one of: navigate | fill | click | assert | wait | select | hover | check | screenshot
+- "target" MUST be a CSS selector, URL path, or descriptive element name — never null or empty
+- "name" is the test title — always a string, never null
+- Each test: 3–8 steps, at least one "assert" step
+- Include happy-path and one negative/boundary test per suite
+- Use "pom" field to reference existing POM methods where applicable:
     loginPage.navigate() | loginPage.fillEmail(email) | loginPage.fillPassword(pwd)
     loginPage.clickLoginButton() | loginPage.assertLoginError(msg)
     productsPage.navigate() | productsPage.searchProduct(term) | productsPage.getProductCount()
     cartPage.navigate() | cartPage.getItemCount() | cartPage.proceedToCheckout()
-- Priority: critical for smoke/auth, high for main flows, medium for edge cases
-- Return ONLY the JSON — no markdown, no prose.
+- Generate ONLY the test cases the provided story/instruction directly requires:
+    • Single user story  → 1 happy-path + 1 negative/boundary (2 tests total)
+    • Multi-flow feature → 1 test per distinct flow, hard cap 4
+    • DO NOT pad — 2 precise tests beat 6 redundant ones
+- Return ONLY the JSON object — no markdown fences, no prose, no trailing commas.
 `;
 
 export const testPlannerAgent: AgentFn<PlannerState> = async (state, ai): Promise<PlannerState> => {
@@ -56,9 +82,8 @@ export const testPlannerAgent: AgentFn<PlannerState> = async (state, ai): Promis
       userMessage:
         `Input type: ${state.inputType}\n\n` +
         `${state.input}\n\n` +
-        `Generate a complete test plan as a JSON object matching exactly:\n` +
-        `{ "testSuite": string, "description": string, "tests": TestCase[], "fixtures": string[] }`,
-      maxTokens: 4096,
+        `Generate the test plan JSON. Use the exact field names from the system prompt.`,
+      maxTokens: 8192,
       operation: 'plan',
     },
     TestPlanSchema,

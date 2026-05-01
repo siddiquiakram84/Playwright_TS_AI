@@ -1,7 +1,12 @@
 {
-  "/api/metrics/route": "app/api/metrics/route.js",
-  "/api/admin/route": "app/api/admin/route.js",
   "/api/jarvis/route": "app/api/jarvis/route.js",
-  "/ai-ops/page": "app/ai-ops/page.js",
-  "/jarvis/page": "app/jarvis/page.js"
+  "/api/config/route": "app/api/config/route.js",
+  "/api/budget/route": "app/api/budget/route.js",
+  "/api/history/route": "app/api/history/route.js",
+  "/api/events/route": "app/api/events/route.js",
+  "/api/metrics/route": "app/api/metrics/route.js",
+  "/allure/[[...slug]]/route": "app/allure/[[...slug]]/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/jarvis/page": "app/jarvis/page.js",
+  "/ai-ops/page": "app/ai-ops/page.js"
 }

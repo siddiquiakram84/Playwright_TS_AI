@@ -79,17 +79,42 @@ export interface BudgetExceededEvent {
   timestamp:        number;
 }
 
+export type OrchestratorStepStatus = 'running' | 'done' | 'error' | 'skipped';
+export type OrchestratorStep =
+  | 'parse' | 'generate' | 'execute' | 'heal' | 'analyze' | 'ticket' | 'summary';
+
+export interface OrchestratorStepEvent {
+  sessionId:  string;
+  step:       OrchestratorStep;
+  status:     OrchestratorStepStatus;
+  detail:     string;
+  timestamp:  number;
+}
+
+export interface JiraTicketEvent {
+  sessionId:  string;
+  key:        string;
+  project:    string;
+  issueType:  'Task' | 'Bug';
+  category:   'devops' | 'bug' | 'manual' | 'summary';
+  summary:    string;
+  url:        string;
+  timestamp:  number;
+}
+
 // ── Event map (typed EventEmitter) ────────────────────────────────────────────
 
 export interface AIEvents {
-  'llm:start':        [event: LLMStartEvent];
-  'llm:end':          [event: LLMEndEvent];
-  'healing':          [event: HealingEvent];
-  'visual':           [event: VisualEvent];
-  'recorder:action':  [event: RecorderActionEvent];
-  'testgen':          [event: TestGenEvent];
-  'admin':            [event: AdminEvent];
-  'budget:exceeded':  [event: BudgetExceededEvent];
+  'llm:start':          [event: LLMStartEvent];
+  'llm:end':            [event: LLMEndEvent];
+  'healing':            [event: HealingEvent];
+  'visual':             [event: VisualEvent];
+  'recorder:action':    [event: RecorderActionEvent];
+  'testgen':            [event: TestGenEvent];
+  'admin':              [event: AdminEvent];
+  'budget:exceeded':    [event: BudgetExceededEvent];
+  'orchestrator:step':  [event: OrchestratorStepEvent];
+  'jira:ticket':        [event: JiraTicketEvent];
 }
 
 // ── Singleton event bus ───────────────────────────────────────────────────────
@@ -104,7 +129,7 @@ class AIEventBus extends EventEmitter {
     super();
     this.setMaxListeners(50);
     const port = process.env.AI_OPS_PORT ?? '9093';
-    this.dashboardUrl = `http://localhost:${port}/api/events`;
+    this.dashboardUrl = `http://localhost:${port}/api/ingest`;
   }
 
   static getInstance(): AIEventBus {
@@ -168,6 +193,16 @@ class AIEventBus extends EventEmitter {
   emitBudgetExceeded(event: BudgetExceededEvent): void {
     this.emit('budget:exceeded', event);
     this.forward('budget:exceeded', event);
+  }
+
+  emitOrchestratorStep(event: OrchestratorStepEvent): void {
+    this.emit('orchestrator:step', event);
+    this.forward('orchestrator:step', event);
+  }
+
+  emitJiraTicket(event: JiraTicketEvent): void {
+    this.emit('jira:ticket', event);
+    this.forward('jira:ticket', event);
   }
 }
 

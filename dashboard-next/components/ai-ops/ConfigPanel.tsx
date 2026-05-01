@@ -159,8 +159,8 @@ export default function ConfigPanel({ budget, provider, onBudgetUpdate }: Props)
             onClick={() => setEditOpen(v => !v)}
             className="orb text-[9px] tracking-[.5px] px-[10px] py-[4px] rounded cursor-pointer transition-all"
             style={{
-              background: editOpen ? 'rgba(0,212,255,.15)' : 'rgba(0,212,255,.06)',
-              border:     '1px solid rgba(0,212,255,.3)',
+              background: editOpen ? 'rgba(59,130,246,.15)' : 'rgba(59,130,246,.06)',
+              border:     '1px solid rgba(59,130,246,.25)',
               color:      'var(--cyan)',
             }}
           >
@@ -179,7 +179,7 @@ export default function ConfigPanel({ budget, provider, onBudgetUpdate }: Props)
               value={tkInput}
               onChange={e => setTkInput(e.target.value)}
               placeholder="e.g. 100000"
-              className="w-full bg-surface2 border border-border2 text-text font-mono text-[11px] px-3 py-[7px] rounded outline-none focus:border-cyan transition-colors"
+              className="w-full bg-surface2 border border-border2 text-text font-mono text-[11px] px-3 py-[7px] rounded-md outline-none focus:border-cyan transition-colors"
             />
           </div>
           <div>
@@ -191,7 +191,7 @@ export default function ConfigPanel({ budget, provider, onBudgetUpdate }: Props)
               value={costInput}
               onChange={e => setCostInput(e.target.value)}
               placeholder="e.g. 5.00"
-              className="w-full bg-surface2 border border-border2 text-text font-mono text-[11px] px-3 py-[7px] rounded outline-none focus:border-cyan transition-colors"
+              className="w-full bg-surface2 border border-border2 text-text font-mono text-[11px] px-3 py-[7px] rounded-md outline-none focus:border-cyan transition-colors"
             />
           </div>
           <div className="flex gap-2">
@@ -200,8 +200,8 @@ export default function ConfigPanel({ budget, provider, onBudgetUpdate }: Props)
               disabled={saving}
               className="flex-1 orb text-[9px] tracking-[.5px] py-[8px] rounded cursor-pointer transition-all"
               style={{
-                background: 'rgba(0,212,255,.12)',
-                border:     '1px solid rgba(0,212,255,.35)',
+                background: 'rgba(59,130,246,.1)',
+                border:     '1px solid rgba(59,130,246,.3)',
                 color:      'var(--cyan)',
               }}
             >

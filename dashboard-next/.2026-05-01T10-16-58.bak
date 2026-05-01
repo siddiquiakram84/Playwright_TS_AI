@@ -1,0 +1,75 @@
+{
+  "scenarios": [
+    {
+      "id": "TC-REG-001",
+      "description": "Navigate to home and initiate signup with a new unique email",
+      "testData": {
+        "signupName": "TestUser_AutoQA"
+      }
+    },
+    {
+      "id": "TC-REG-002",
+      "description": "Fill full account information form and submit to create account",
+      "testData": {
+        "password": "Test@1234Secure",
+        "birthDay": "15",
+        "birthMonth": "6",
+        "birthYear": "1995",
+        "firstName": "Test",
+        "lastName": "AutoQA",
+        "company": "AutoQA Corp",
+        "address": "123 Test Street",
+        "country": "United States",
+        "state": "California",
+        "city": "Los Angeles",
+        "zipcode": "90001",
+        "mobileNumber": "9876543210"
+      }
+    },
+    {
+      "id": "TC-REG-003",
+      "description": "Verify logged-in state after account creation, then delete account",
+      "testData": {
+        "expectedUsername": "TestUser_AutoQA"
+      }
+    },
+    {
+      "id": "TC-REG-004",
+      "description": "Attempt signup with an already registered email address",
+      "testData": {
+        "signupName": "ExistingUser",
+        "existingEmail": "registered_user@automationexercise.com"
+      }
+    },
+    {
+      "id": "TC-REG-005",
+      "description": "Attempt signup with an invalid email format to trigger HTML5 validation",
+      "testData": {
+        "signupName": "InvalidEmailUser",
+        "invalidEmail": "not-an-email"
+      }
+    },
+    {
+      "id": "TC-REG-006",
+      "description": "Attempt signup with an empty name field to trigger HTML5 required validation",
+      "testData": {
+        "emailOnly": "partial_signup_test@autoqa.dev"
+      }
+    }
+  ],
+  "constants": {
+    "expectedMessages": {
+      "duplicateEmailError": "Email Address already exist!",
+      "accountCreated": "ACCOUNT CREATED!",
+      "accountDeleted": "ACCOUNT DELETED!",
+      "newUserSignupHeading": "New User Signup!",
+      "enterAccountInfoHeading": "Enter Account Information"
+    },
+    "routes": {
+      "homeUrl": "/",
+      "loginUrl": "/login",
+      "deleteAccountUrl": "/delete_account",
+      "productsUrl": "/products"
+    }
+  }
+}

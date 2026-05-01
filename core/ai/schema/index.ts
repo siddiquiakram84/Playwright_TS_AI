@@ -60,7 +60,34 @@ export const GeneratedProductSchema = z.object({
 
 // ── Test planning (multi-agent) ───────────────────────────────────────────────
 
-export const TestStepSchema = z.object({
+// Normalise common LLM field-name variants before strict validation
+function normaliseStep(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw;
+  const s = raw as Record<string, unknown>;
+  return {
+    action:      s.action      ?? s.type        ?? s.stepType  ?? s.kind,
+    target:      s.target      ?? s.selector    ?? s.locator   ?? s.element  ?? s.field ?? s.page,
+    value:       s.value       ?? s.text        ?? s.inputValue ?? s.input,
+    pom:         s.pom         ?? s.pomMethod   ?? s.method,
+    assertType:  s.assertType  ?? s.assertionType ?? s.assertion,
+    expected:    s.expected    ?? s.expectedValue ?? s.expectedText ?? s.expect,
+    description: s.description ?? s.desc        ?? s.details   ?? s.note,
+  };
+}
+
+function normaliseTestCase(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw;
+  const s = raw as Record<string, unknown>;
+  return {
+    name:      s.name      ?? s.title     ?? s.testName  ?? s.id    ?? s.case,
+    steps:     s.steps     ?? s.testSteps ?? s.actions,
+    dataNeeds: s.dataNeeds ?? s.testData  ?? s.data      ?? [],
+    tags:      s.tags      ?? s.labels    ?? s.categories ?? [],
+    priority:  s.priority  ?? s.criticality ?? s.level,
+  };
+}
+
+export const TestStepSchema = z.preprocess(normaliseStep, z.object({
   action:      z.enum(['navigate', 'fill', 'click', 'assert', 'wait', 'select', 'hover', 'check', 'screenshot']),
   target:      z.string().min(1),
   value:       z.string().optional(),
@@ -68,15 +95,15 @@ export const TestStepSchema = z.object({
   assertType:  z.enum(['visible', 'text', 'value', 'url', 'count', 'enabled', 'checked', 'hidden']).optional(),
   expected:    z.string().optional(),
   description: z.string().optional(),
-});
+}));
 
-export const TestCaseSchema = z.object({
+export const TestCaseSchema = z.preprocess(normaliseTestCase, z.object({
   name:      z.string().min(1),
   steps:     z.array(TestStepSchema).min(1),
   dataNeeds: z.array(z.string()).default([]),
   tags:      z.array(z.string()).default([]),
   priority:  z.enum(['critical', 'high', 'medium', 'low']).default('medium'),
-});
+}));
 
 export const TestPlanSchema = z.object({
   testSuite:   z.string().min(1),

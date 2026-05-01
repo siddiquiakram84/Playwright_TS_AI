@@ -105,11 +105,15 @@ export class AnthropicProvider implements IAIProvider {
     try {
       return this.parseAndValidate(raw, schema);
     } catch {
-      // Retry with an explicit repair instruction
-      logger.warn('[Anthropic] JSON parse failed — retrying with repair prompt');
+      // Retry: request compact JSON — previous response likely exceeded token budget
+      logger.warn('[Anthropic] JSON parse failed — retrying with compact constraint');
       const repairRaw = await this.complete({
         ...jsonParams,
-        userMessage: `${params.userMessage}\n\nYour previous response was not valid JSON. Return ONLY the raw JSON object or array.`,
+        userMessage:
+          `${params.userMessage}\n\n` +
+          `IMPORTANT: Your previous response was truncated. ` +
+          `Return ONLY valid JSON — no markdown, no prose, no trailing commas. ` +
+          `Be concise: use short strings, omit optional fields when empty.`,
       });
       return this.parseAndValidate(repairRaw, schema);
     }

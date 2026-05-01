@@ -33,8 +33,8 @@ function fmtNum(n: number): string {
 }
 
 export default function AdminModal({ metrics, provider, onClose, onProviderChange }: Props) {
-  const [statuses,    setStatuses]    = useState<Record<string, Status>>({});
-  const [confirmId,   setConfirmId]   = useState<string | null>(null);
+  const [statuses,     setStatuses]     = useState<Record<string, Status>>({});
+  const [confirmId,    setConfirmId]    = useState<string | null>(null);
   const [nextProvider, setNextProvider] = useState(provider);
   const [switchStatus, setSwitchStatus] = useState<Status>('idle');
   const [cacheStats,   setCacheStats]   = useState<{ size: number; hits: number; misses: number; hitRate: number } | null>(null);
@@ -88,41 +88,40 @@ export default function AdminModal({ metrics, provider, onClose, onProviderChang
   }
 
   const statusColor = (s: Status) =>
-    s === 'ok'      ? 'var(--green)'
-    : s === 'err'   ? 'var(--red)'
+    s === 'ok'        ? 'var(--green)'
+    : s === 'err'     ? 'var(--red)'
     : s === 'pending' ? 'var(--yellow)'
     : 'inherit';
 
   const statusLabel = (s: Status, idle: string) =>
-    s === 'ok' ? '✓ DONE' : s === 'err' ? '✗ FAILED' : s === 'pending' ? '…' : idle;
+    s === 'ok' ? '✓ Done' : s === 'err' ? '✗ Failed' : s === 'pending' ? '…' : idle;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,.65)' }}
+      style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="panel-corners relative flex flex-col overflow-hidden rounded"
+        className="relative flex flex-col overflow-hidden rounded-lg"
         style={{
           width: 480, maxHeight: '85vh',
-          background: 'linear-gradient(175deg, var(--surface) 0%, var(--bg) 100%)',
-          border: '1px solid var(--border2)',
-          boxShadow: '0 0 40px rgba(0,212,255,.12), 0 8px 32px rgba(0,0,0,.8)',
+          background: 'var(--surface)',
+          border:     '1px solid var(--border2)',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div
           className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b"
-          style={{ borderColor: 'var(--border2)', background: 'rgba(0,212,255,.05)' }}
+          style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}
         >
-          <span className="orb text-[13px] font-black tracking-[3px] text-cyan" style={{ textShadow: 'var(--glow-c)' }}>
-            ⚙ ADMIN
+          <span className="text-[13px] font-semibold text-text">
+            Admin
           </span>
           <button
             onClick={onClose}
-            className="orb text-[11px] text-muted hover:text-text transition-colors cursor-pointer px-2"
+            className="text-[12px] text-muted hover:text-text transition-colors cursor-pointer px-2 py-1 rounded hover:bg-surface3"
           >
             ✕
           </button>
@@ -131,16 +130,16 @@ export default function AdminModal({ metrics, provider, onClose, onProviderChang
         <div className="flex-1 overflow-y-auto">
           {/* Session snapshot */}
           <section className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-            <div className="orb text-[9px] tracking-[1.5px] text-muted uppercase mb-3">Session Snapshot</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-[.5px] mb-3">Session Snapshot</div>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: 'Calls',  value: String(metrics.calls) },
                 { label: 'Tokens', value: fmtNum(metrics.inputTokens + metrics.outputTokens) },
                 { label: 'Cost',   value: `$${metrics.estimatedCostUsd.toFixed(4)}` },
               ].map(({ label, value }) => (
-                <div key={label} className="text-center py-2 rounded" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-                  <div className="orb text-[15px] font-bold text-cyan tabular-nums">{value}</div>
-                  <div className="orb text-[9px] tracking-[1px] text-muted mt-[3px]">{label}</div>
+                <div key={label} className="text-center py-3 rounded-md" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                  <div className="text-[15px] font-bold text-text tabular-nums font-mono">{value}</div>
+                  <div className="text-[10px] text-muted mt-[3px] uppercase tracking-[.5px]">{label}</div>
                 </div>
               ))}
             </div>
@@ -149,42 +148,42 @@ export default function AdminModal({ metrics, provider, onClose, onProviderChang
           {/* Cache stats */}
           <section className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
             <div className="flex items-center justify-between mb-3">
-              <span className="orb text-[9px] tracking-[1.5px] text-muted uppercase">Response Cache</span>
+              <span className="text-[10px] font-semibold text-muted uppercase tracking-[.5px]">Response Cache</span>
               <button
                 onClick={loadCacheStats}
-                className="orb text-[9px] tracking-[.5px] px-2 py-[3px] rounded cursor-pointer transition-all"
-                style={{ background: 'rgba(0,212,255,.08)', border: '1px solid rgba(0,212,255,.25)', color: 'var(--cyan)' }}
+                className="text-[10px] font-medium px-2 py-[3px] rounded cursor-pointer transition-all"
+                style={{ background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.2)', color: 'var(--cyan)' }}
               >
-                {loadingCache ? '…' : 'REFRESH'}
+                {loadingCache ? '…' : 'Refresh'}
               </button>
             </div>
             {cacheStats ? (
               <div className="grid grid-cols-4 gap-2">
                 {[
-                  { label: 'Entries', value: String(cacheStats.size) },
-                  { label: 'Hits',    value: String(cacheStats.hits) },
-                  { label: 'Misses',  value: String(cacheStats.misses) },
-                  { label: 'Hit Rate',value: `${cacheStats.hitRate}%` },
+                  { label: 'Entries',  value: String(cacheStats.size) },
+                  { label: 'Hits',     value: String(cacheStats.hits) },
+                  { label: 'Misses',   value: String(cacheStats.misses) },
+                  { label: 'Hit Rate', value: `${cacheStats.hitRate}%` },
                 ].map(({ label, value }) => (
-                  <div key={label} className="text-center py-[6px] rounded" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-                    <div className="orb text-[12px] font-bold text-cyan2 tabular-nums">{value}</div>
-                    <div className="orb text-[8px] tracking-[.5px] text-muted mt-[2px]">{label}</div>
+                  <div key={label} className="text-center py-[6px] rounded-md" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                    <div className="text-[12px] font-bold text-cyan2 tabular-nums font-mono">{value}</div>
+                    <div className="text-[9px] text-muted mt-[2px] uppercase tracking-[.3px]">{label}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-[10px] text-dim">Click REFRESH to load cache stats.</div>
+              <div className="text-[11px] text-dim">Click Refresh to load cache stats.</div>
             )}
           </section>
 
           {/* Provider switch */}
           <section className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-            <div className="orb text-[9px] tracking-[1.5px] text-muted uppercase mb-3">Switch Provider</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-[.5px] mb-3">Switch Provider</div>
             <div className="flex gap-2">
               <select
                 value={nextProvider}
                 onChange={e => setNextProvider(e.target.value)}
-                className="flex-1 bg-surface2 border border-border2 text-text font-mono text-[11px] px-3 py-[7px] rounded outline-none focus:border-cyan transition-colors cursor-pointer"
+                className="flex-1 bg-surface2 border border-border2 text-text font-mono text-[11px] px-3 py-[7px] rounded-md outline-none focus:border-cyan transition-colors cursor-pointer"
               >
                 <option value="anthropic">anthropic</option>
                 <option value="local">local (ollama)</option>
@@ -192,14 +191,14 @@ export default function AdminModal({ metrics, provider, onClose, onProviderChang
               <button
                 onClick={switchProvider}
                 disabled={switchStatus === 'pending' || nextProvider === provider}
-                className="orb text-[9px] tracking-[.5px] px-4 py-[7px] rounded cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="text-[11px] font-medium px-4 py-[7px] rounded-md cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
-                  background: 'rgba(0,212,255,.1)',
-                  border:     '1px solid rgba(0,212,255,.3)',
+                  background: 'rgba(59,130,246,.08)',
+                  border:     '1px solid rgba(59,130,246,.25)',
                   color:      switchStatus !== 'idle' ? statusColor(switchStatus) : 'var(--cyan)',
                 }}
               >
-                {statusLabel(switchStatus, 'SWITCH')}
+                {statusLabel(switchStatus, 'Switch')}
               </button>
             </div>
             {nextProvider === provider && (
@@ -209,30 +208,30 @@ export default function AdminModal({ metrics, provider, onClose, onProviderChang
 
           {/* Actions */}
           <section className="px-5 py-4">
-            <div className="orb text-[9px] tracking-[1.5px] text-muted uppercase mb-3">Actions</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-[.5px] mb-3">Actions</div>
             <div className="flex flex-col gap-2">
               {ACTIONS.map(a => (
                 <div
                   key={a.id}
-                  className="flex items-center justify-between gap-3 px-3 py-[10px] rounded"
+                  className="flex items-center justify-between gap-3 px-3 py-[10px] rounded-md"
                   style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="orb text-[10px] font-bold" style={{ color: a.color }}>{a.label}</div>
+                    <div className="text-[11px] font-semibold" style={{ color: a.color }}>{a.label}</div>
                     <div className="text-[10px] text-dim mt-[2px]">{a.desc}</div>
                   </div>
                   {confirmId === a.id ? (
                     <div className="flex gap-1 flex-shrink-0">
                       <button
                         onClick={() => runAction(a.id)}
-                        className="orb text-[9px] tracking-[.5px] px-3 py-[5px] rounded cursor-pointer"
-                        style={{ background: 'rgba(255,61,90,.15)', border: '1px solid rgba(255,61,90,.35)', color: 'var(--red)' }}
+                        className="text-[10px] font-medium px-3 py-[5px] rounded-md cursor-pointer"
+                        style={{ background: 'rgba(239,68,68,.12)', border: '1px solid rgba(239,68,68,.3)', color: 'var(--red)' }}
                       >
-                        CONFIRM
+                        Confirm
                       </button>
                       <button
                         onClick={() => setConfirmId(null)}
-                        className="orb text-[9px] px-2 py-[5px] rounded cursor-pointer"
+                        className="text-[10px] px-2 py-[5px] rounded-md cursor-pointer"
                         style={{ border: '1px solid var(--border2)', color: 'var(--muted)' }}
                       >
                         ✕
@@ -242,14 +241,14 @@ export default function AdminModal({ metrics, provider, onClose, onProviderChang
                     <button
                       onClick={() => a.confirm ? setConfirmId(a.id) : runAction(a.id)}
                       disabled={statuses[a.id] === 'pending'}
-                      className="orb text-[9px] tracking-[.5px] px-3 py-[5px] rounded cursor-pointer transition-all flex-shrink-0 disabled:opacity-50"
+                      className="text-[10px] font-medium px-3 py-[5px] rounded-md cursor-pointer transition-all flex-shrink-0 disabled:opacity-50"
                       style={{
                         background: `${a.color}14`,
                         border:     `1px solid ${a.color}44`,
                         color:      statuses[a.id] && statuses[a.id] !== 'idle' ? statusColor(statuses[a.id]!) : a.color,
                       }}
                     >
-                      {statusLabel(statuses[a.id] ?? 'idle', 'RUN')}
+                      {statusLabel(statuses[a.id] ?? 'idle', 'Run')}
                     </button>
                   )}
                 </div>

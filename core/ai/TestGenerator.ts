@@ -3,6 +3,7 @@ import { testPlannerAgent, PlannerState } from './agents/TestPlannerAgent';
 import { testWriterAgent, WriterState }   from './agents/TestWriterAgent';
 import { testValidatorAgent, ValidatorState } from './agents/TestValidatorAgent';
 import { squishtestWriterAgent }  from './agents/SquishtestWriterAgent';
+import { excelParser, ExcelParserAgent } from './agents/ExcelParserAgent';
 import { GeneratedTestSpec }      from './types';
 import { logger }                 from '../utils/logger';
 
@@ -81,6 +82,21 @@ export class TestGenerator {
    *
    * Multiple test cases can be separated by blank lines or "---" dividers.
    */
+  /**
+   * Generate a Playwright TypeScript spec from an Excel (.xlsx) test case file.
+   * Accepts the raw file buffer (supports upload via dashboard or CLI path).
+   */
+  async fromExcel(buffer: Buffer, outputPath?: string): Promise<GeneratedTestSpec> {
+    logger.info('[TestGenerator] Generating from Excel test cases…');
+    const testCases = await excelParser.parseBuffer(buffer);
+    if (testCases.length === 0) {
+      throw new Error('[TestGenerator] No test cases found in Excel file');
+    }
+    const prompt = ExcelParserAgent.toPrompt(testCases);
+    logger.info(`[TestGenerator] Excel: ${testCases.length} test case(s) → prompt`);
+    return this.run(prompt, 'story', outputPath);
+  }
+
   async fromManualTxt(txtContent: string, outputPath?: string): Promise<GeneratedTestSpec> {
     logger.info('[TestGenerator] Generating from manual TXT test cases…');
 

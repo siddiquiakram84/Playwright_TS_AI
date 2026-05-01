@@ -1,4 +1,4 @@
-// ── Per-run summary ───────────────────────────────────────────────────────────
+// ── Per-run summary ────────────────────────────────────────────────────────────
 export interface RunSummary {
   total:    number;
   passed:   number;
@@ -10,7 +10,7 @@ export interface RunSummary {
   startTime:string;   // ISO
 }
 
-// ── Per-project (browser) breakdown ──────────────────────────────────────────
+// ── Per-project (browser) breakdown ───────────────────────────────────────────
 export interface ProjectStat {
   name:    string;
   total:   number;
@@ -19,7 +19,7 @@ export interface ProjectStat {
   skipped: number;
 }
 
-// ── Individual spec row ───────────────────────────────────────────────────────
+// ── Individual spec row ────────────────────────────────────────────────────────
 export type SpecStatus = 'passed' | 'failed' | 'skipped' | 'timedOut' | 'flaky';
 
 export interface SpecRow {
@@ -33,20 +33,34 @@ export interface SpecRow {
   retry:    number;
 }
 
-// ── History point ─────────────────────────────────────────────────────────────
+// ── History point ──────────────────────────────────────────────────────────────
 export interface HistoryPoint extends RunSummary {
   recordedAt: string; // ISO
 }
 
-// ── Full API response ─────────────────────────────────────────────────────────
+// ── AI pipeline session ────────────────────────────────────────────────────────
+export interface AIPipelineSession {
+  sessionId:    string;
+  inputType:    string;           // story | nl | recording
+  status:       string;           // pending | complete | error
+  testCount:    number;
+  qualityScore: number;
+  filename?:    string;
+  createdAt:    number;           // unix epoch seconds
+  error?:       string;
+}
+
+// ── Full API response ──────────────────────────────────────────────────────────
 export interface JarvisData {
-  status:     'ok' | 'no_data' | 'error';
-  message?:   string;
-  summary:    RunSummary;
-  projects:   ProjectStat[];
-  specs:      SpecRow[];
-  failures:   SpecRow[];
-  slowTests:  SpecRow[];
-  history:    HistoryPoint[];
-  lastUpdated:string;
+  status:      'ok' | 'no_data' | 'error';
+  message?:    string;
+  summary:     RunSummary;
+  projects:    ProjectStat[];
+  specs:       SpecRow[];
+  failures:    SpecRow[];
+  slowTests:   SpecRow[];
+  history:     HistoryPoint[];
+  pipeline:    AIPipelineSession[];
+  reports:     { allureReady: boolean; pwReportReady: boolean };
+  lastUpdated: string;
 }

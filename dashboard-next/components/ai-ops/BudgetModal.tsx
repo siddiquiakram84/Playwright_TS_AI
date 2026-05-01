@@ -26,48 +26,47 @@ export default function BudgetModal({ payload, onReset }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,.88)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)' }}
     >
       <div
-        className="panel-corners relative w-[440px] rounded-[4px] overflow-hidden"
+        className="relative w-[440px] rounded-lg overflow-hidden"
         style={{
-          background:  'linear-gradient(175deg, #1c030a 0%, #080104 100%)',
-          border:      '1px solid rgba(255,61,90,.4)',
-          boxShadow:   '0 0 60px rgba(255,61,90,.2)',
+          background: 'var(--surface)',
+          border:     '1px solid rgba(239,68,68,.35)',
         }}
       >
         {/* Header */}
         <div
           className="flex items-center gap-3 px-5 py-[14px] border-b"
-          style={{ borderColor: 'rgba(255,61,90,.25)', background: 'rgba(255,61,90,.07)' }}
+          style={{ borderColor: 'rgba(239,68,68,.2)', background: 'rgba(239,68,68,.06)' }}
         >
           <span
-            className="w-3 h-3 rounded-full flex-shrink-0 animate-live-pulse"
-            style={{ background: 'var(--red)', boxShadow: 'var(--glow-r)' }}
+            className="w-[10px] h-[10px] rounded-full flex-shrink-0 animate-live-pulse"
+            style={{ background: 'var(--red)' }}
           />
-          <span className="orb text-[12px] font-black tracking-[3px] text-red animate-budget-pulse">
-            BUDGET LIMIT EXCEEDED
+          <span className="text-[13px] font-bold tracking-[1px] text-red animate-budget-pulse">
+            Budget Limit Exceeded
           </span>
         </div>
 
         {/* Stats grid */}
         <div className="px-5 pt-5 pb-4">
-          <p className="orb text-[9px] tracking-[1.5px] text-muted uppercase text-center mb-4">
+          <p className="text-[11px] text-muted text-center mb-4">
             {payload.type === 'token' ? 'Token' : 'Cost'} limit reached — AI operations are blocked
           </p>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
             {[
-              { label: 'USED',  value: used  },
-              { label: 'LIMIT', value: limit },
+              { label: 'Used',  value: used  },
+              { label: 'Limit', value: limit },
             ].map(({ label, value }) => (
               <div
                 key={label}
-                className="text-center py-4 rounded"
-                style={{ background: 'rgba(255,61,90,.09)', border: '1px solid rgba(255,61,90,.22)' }}
+                className="text-center py-4 rounded-md"
+                style={{ background: 'rgba(239,68,68,.07)', border: '1px solid rgba(239,68,68,.18)' }}
               >
-                <div className="orb text-[22px] font-black text-red leading-none">{value}</div>
-                <div className="orb text-[9px] tracking-[1.5px] text-muted mt-2">{label}</div>
+                <div className="text-[22px] font-bold text-red leading-none font-mono">{value}</div>
+                <div className="text-[10px] text-muted mt-2 uppercase tracking-[.5px]">{label}</div>
               </div>
             ))}
           </div>
@@ -80,19 +79,19 @@ export default function BudgetModal({ payload, onReset }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="px-5 pb-4 flex gap-3">
+        <div className="px-5 pb-5 flex gap-3">
           <button
             onClick={handleReset}
-            className="flex-1 orb text-[10px] font-bold tracking-[1px] py-[11px] rounded cursor-pointer transition-all"
+            className="flex-1 text-[11px] font-semibold py-[11px] rounded-md cursor-pointer transition-all"
             style={{
-              background: 'rgba(255,61,90,.14)',
-              border:     '1px solid rgba(255,61,90,.4)',
+              background: 'rgba(239,68,68,.1)',
+              border:     '1px solid rgba(239,68,68,.35)',
               color:      'var(--red)',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,61,90,.25)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,61,90,.14)')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,.18)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,.1)')}
           >
-            ⟳ RESET LIMITS &amp; CONTINUE
+            Reset Limits &amp; Continue
           </button>
         </div>
 

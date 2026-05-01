@@ -68,8 +68,12 @@ export class AgentGraph<S extends AgentState> {
       try {
         state = await fn(state, AIClient.getInstance());
       } catch (err) {
-        state = { ...state, error: (err as Error).message };
-        logger.error(`[AgentGraph] Node "${current}" failed: ${(err as Error).message}`);
+        const msg = (err as Error).message;
+        state = { ...state, error: msg };
+        logger.error(`[AgentGraph] Node "${current}" failed: ${msg}`);
+        // Emit error stage so dashboard session card resolves instead of staying at last stage
+        const source = (state.inputType as string | undefined) ?? 'story';
+        emitStage(state.sessionId, 'error', source as 'story' | 'nl' | 'recording', msg);
         break;
       }
 

@@ -77,10 +77,10 @@ function CallRow({ item }: { item: LLMCallItem }) {
 
   return (
     <div
-      className="grid items-center gap-2 px-[14px] py-2 border-b hover:bg-[rgba(0,212,255,.03)] transition-colors animate-slide-in"
+      className="grid items-center gap-2 px-[14px] py-2 border-b hover:bg-[rgba(255,255,255,.02)] transition-colors animate-slide-in"
       style={{
         gridTemplateColumns: '18px 115px 80px 1fr 72px 78px',
-        borderColor:         'rgba(22,52,80,.6)',
+        borderColor:         'var(--border)',
       }}
     >
       {/* Status dot */}
@@ -123,7 +123,6 @@ function CallRow({ item }: { item: LLMCallItem }) {
       {/* Cost */}
       <div
         className={`text-[11px] text-right tabular-nums ${isErr ? 'text-red' : 'text-green2'}`}
-        style={!isErr ? { textShadow: '0 0 6px rgba(0,232,154,.25)' } : undefined}
       >
         {isDone ? (isErr ? '❌' : `$${(item.costUsd ?? 0).toFixed(4)}`) : '—'}
       </div>
@@ -136,7 +135,7 @@ function ColHeaders() {
   return (
     <div
       className="flex-shrink-0 grid items-center gap-2 px-[14px] py-[7px] border-b orb text-[9px] text-dim tracking-[1px] uppercase"
-      style={{ gridTemplateColumns: '18px 115px 80px 1fr 72px 78px', borderColor: 'var(--border)', background: 'rgba(0,0,0,.3)' }}
+      style={{ gridTemplateColumns: '18px 115px 80px 1fr 72px 78px', borderColor: 'var(--border)', background: 'var(--surface2)' }}
     >
       <span />
       <span>Operation</span>
@@ -165,7 +164,7 @@ export function TabBar({ active, onChange }: TabBarProps) {
   return (
     <div
       className="flex-shrink-0 flex border-b"
-      style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,.35)' }}
+      style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
     >
       {tabs.map(t => (
         <button

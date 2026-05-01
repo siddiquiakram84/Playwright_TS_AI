@@ -24,10 +24,10 @@ function fmtTime(ts: number): string {
 function ResultRow({ item }: { item: VisualItem }) {
   return (
     <div
-      className="grid items-center gap-2 px-[14px] py-[10px] border-b hover:bg-[rgba(0,212,255,.03)] transition-colors animate-slide-in"
+      className="grid items-center gap-2 px-[14px] py-[10px] border-b hover:bg-[rgba(255,255,255,.02)] transition-colors animate-slide-in"
       style={{
         gridTemplateColumns: '9px 1fr 70px 68px 72px',
-        borderColor:         'rgba(22,52,80,.6)',
+        borderColor:         'var(--border)',
       }}
     >
       {/* Pass/fail dot */}
@@ -35,7 +35,6 @@ function ResultRow({ item }: { item: VisualItem }) {
         className="w-[9px] h-[9px] rounded-full flex-shrink-0"
         style={{
           background: item.passed ? 'var(--green)' : 'var(--red)',
-          boxShadow:  item.passed ? 'var(--glow-g)' : 'var(--glow-r)',
         }}
       />
 
@@ -72,7 +71,7 @@ function ColHeaders() {
       style={{
         gridTemplateColumns: '9px 1fr 70px 68px 72px',
         borderColor:         'var(--border)',
-        background:          'rgba(0,0,0,.3)',
+        background:          'var(--surface2)',
       }}
     >
       <span />
@@ -93,7 +92,7 @@ function SummaryBar({ items }: { items: VisualItem[] }) {
   return (
     <div
       className="flex-shrink-0 flex items-center gap-3 px-[14px] py-[7px] border-b"
-      style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,.2)' }}
+      style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}
     >
       <div className="flex-1 h-[3px] bg-surface3 rounded-full overflow-hidden">
         <div

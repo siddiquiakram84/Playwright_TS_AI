@@ -74,6 +74,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/allure/[[...slug]]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/allure/[[...slug]]">> = Specific
+  const handler = {} as typeof import("../../app/allure/[[...slug]]/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/admin/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin">> = Specific
@@ -150,6 +159,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/metrics">> = Specific
   const handler = {} as typeof import("../../app/api/metrics/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/orchestrate/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/orchestrate">> = Specific
+  const handler = {} as typeof import("../../app/api/orchestrate/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/pw-report/[[...slug]]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/pw-report/[[...slug]]">> = Specific
+  const handler = {} as typeof import("../../app/pw-report/[[...slug]]/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

@@ -1,0 +1,143 @@
+{
+  "entries": {
+    "fe8b73738961981bc4b4a6ecad673dbe5da166d61c2166905dfe4d5886af2a4d": {
+      "value": {
+        "title": "Ms",
+        "firstName": "Harriet",
+        "lastName": "Forsythe",
+        "email": "harriet.forsythe472@btinternet.co.uk",
+        "password": "Kelpie7!vn",
+        "phone": "07823641095",
+        "address": {
+          "street": "34 Bramblewood Lane",
+          "city": "Bristol",
+          "state": "Avon",
+          "zipCode": "BS3 4PQ",
+          "country": "United Kingdom"
+        },
+        "dateOfBirth": {
+          "day": 22,
+          "month": 9,
+          "year": 1993
+        }
+      },
+      "operation": "datagen",
+      "expiresAt": 1777635203828,
+      "hits": 0
+    },
+    "ebf39f8b4628e68ac9b1826bd6e9a000c70a5429c3e08a25d7efcfce6f6444da": {
+      "value": {
+        "title": "Floral Wrap Sundress",
+        "price": 38.5,
+        "description": "Breezy floral-print wrap sundress with adjustable tie waist and flutter sleeves, perfect for warm summer days and casual outings",
+        "category": "Women's Clothing",
+        "searchTerms": [
+          "sundress",
+          "floral dress",
+          "wrap dress",
+          "summer dress",
+          "casual dress"
+        ]
+      },
+      "operation": "datagen",
+      "expiresAt": 1777635205514,
+      "hits": 0
+    },
+    "b1f99a15b0d57a7dc2036a385d5bae89e666fa8a82d0e7d3fdb2defab2c0c228": {
+      "value": [
+        "mens dress shirt",
+        "formal suit jacket",
+        "office trousers",
+        "business blazer",
+        "slim fit chinos"
+      ],
+      "operation": "datagen",
+      "expiresAt": 1777635207122,
+      "hits": 0
+    },
+    "27b55ac28e25ee5e2367273010c74abaea2b809dddb064e194aec665ab88b7cd": {
+      "value": {
+        "title": "Ms",
+        "firstName": "Priya",
+        "lastName": "Harrington",
+        "email": "priya.harrington847@outlook.co.uk",
+        "password": "Marble7!xq",
+        "phone": "07823541096",
+        "address": {
+          "street": "34 Elmwood Crescent",
+          "city": "Birmingham",
+          "state": "West Midlands",
+          "zipCode": "B3 7NP",
+          "country": "United Kingdom"
+        },
+        "dateOfBirth": {
+          "day": 22,
+          "month": 9,
+          "year": 1993
+        }
+      },
+      "operation": "datagen",
+      "expiresAt": 1777635211045,
+      "hits": 0
+    },
+    "05de3f181a13d4ab0a11adb8181eb0ba95c80ead30f1da1333546de9349abf53": {
+      "value": {
+        "title": "Ms",
+        "firstName": "Priya",
+        "lastName": "Nair",
+        "email": "priya.nair847@outlook.com",
+        "password": "Kestrel7#p",
+        "phone": "07823546912",
+        "address": {
+          "street": "34 Birchwood Avenue",
+          "city": "Birmingham",
+          "state": "West Midlands",
+          "zipCode": "B12 9HT",
+          "country": "United Kingdom"
+        },
+        "dateOfBirth": {
+          "day": 22,
+          "month": 3,
+          "year": 1993
+        }
+      },
+      "operation": "datagen",
+      "expiresAt": 1777635217613,
+      "hits": 2
+    },
+    "3ef54f8c25ee84836d59f3b0e8f4b10f8e2d16fa30e9679c6c8319552cc8560a": {
+      "value": [
+        "slim fit chinos"
+      ],
+      "operation": "datagen",
+      "expiresAt": 1777635222511,
+      "hits": 0
+    },
+    "af9eb0543495353b6c1d8a5f4e319c9a3663d2670bb09bb0a32072be0f3a8904": {
+      "value": [
+        {
+          "selector": "[data-qa=\"login-email\"]",
+          "confidence": 0.99,
+          "reasoning": ""
+        },
+        {
+          "selector": "input[name=\"email\"]",
+          "confidence": 0.95,
+          "reasoning": ""
+        },
+        {
+          "selector": "input[type=\"email\"][placeholder=\"Email Address\"]",
+          "confidence": 0.9,
+          "reasoning": ""
+        }
+      ],
+      "operation": "healing",
+      "expiresAt": 1777718485399,
+      "hits": 0
+    }
+  },
+  "stats": {
+    "hits": 2,
+    "misses": 7
+  }
+}

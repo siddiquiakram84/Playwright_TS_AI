@@ -117,7 +117,7 @@ show_menu() {
   echo -e "  ${CYAN}[33]${RESET} Generate AI test data       ${DIM}(users · products · search terms)${RESET}"
   echo -e "  ${CYAN}[34]${RESET} Capture visual baselines    ${DIM}(establishes regression reference)${RESET}"
   echo -e "  ${CYAN}[35]${RESET} 🎬 Real-time Test Recorder  ${DIM}(record actions → AI generates spec)${RESET}"
-  echo -e "  ${CYAN}[36]${RESET} 🤖 Start AI Ops Dashboard   ${DIM}(live LLM feed · admin → :9093)${RESET}"
+  echo -e "  ${CYAN}[36]${RESET} 🤖 Start AI Ops Dashboard   ${DIM}(live LLM feed · admin → :9094)${RESET}"
   echo ""
   echo -e "  ${RED}[0]${RESET}  Exit"
   divider
@@ -593,12 +593,13 @@ main() {
         ;;
       36)
         section "AI Ops Dashboard"
-        info "Starting AI Ops server on ${CYAN}http://localhost:9093${RESET}"
-        info "Admin panel — default password: ${BOLD}changeme${RESET} (set ADMIN_SECRET in .env)"
+        info "Starting AI Ops Dashboard (Next.js) on ${CYAN}http://localhost:9094${RESET}"
+        info "Set ${BOLD}AI_PROVIDER=anthropic${RESET} + ${BOLD}ANTHROPIC_API_KEY${RESET} in .env to use Claude"
         info "Press Ctrl+C to stop."
         echo ""
-        open_url "http://localhost:9093" &
-        npx tsx dashboard/ai-ops/server.ts
+        sleep 1
+        open_url "http://localhost:9094/ai-ops" &
+        cd dashboard-next && npm run dev
         ;;
 
       0)

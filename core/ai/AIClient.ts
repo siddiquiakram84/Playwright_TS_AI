@@ -128,28 +128,28 @@ export class AIClient {
       tags: [this.provider.name, operation, method],
     });
 
-    // Enforce budget limits before every LLM call
-    const budget = costTracker.checkLimits();
-    if (budget.exceeded) {
-      const totals = costTracker.getSessionTotals();
-      aiEventBus.emitBudgetExceeded({
-        type:             budget.type!,
-        used:             budget.used,
-        limit:            budget.limit,
-        calls:            totals.calls,
-        estimatedCostUsd: totals.estimatedCostUsd,
-        timestamp:        Date.now(),
-      });
-      throw new Error(
-        `[AIClient] Budget exceeded — ${budget.type === 'token'
-          ? `${budget.used.toLocaleString()} / ${budget.limit.toLocaleString()} tokens used`
-          : `$${budget.used.toFixed(4)} / $${budget.limit.toFixed(4)} cost limit reached`}`,
-      );
-    }
-
     let activeProvider = this.provider;
 
     try {
+      // Enforce budget limits before every LLM call — inside try so recordFailure fires on breach
+      const budget = costTracker.checkLimits();
+      if (budget.exceeded) {
+        const totals = costTracker.getSessionTotals();
+        aiEventBus.emitBudgetExceeded({
+          type:             budget.type!,
+          used:             budget.used,
+          limit:            budget.limit,
+          calls:            totals.calls,
+          estimatedCostUsd: totals.estimatedCostUsd,
+          timestamp:        Date.now(),
+        });
+        throw new Error(
+          `[AIClient] Budget exceeded — ${budget.type === 'token'
+            ? `${budget.used.toLocaleString()} / ${budget.limit.toLocaleString()} tokens used`
+            : `$${budget.used.toFixed(4)} / $${budget.limit.toFixed(4)} cost limit reached`}`,
+        );
+      }
+
       let result = await invoke(activeProvider, params);
 
       // Detect Ollama offline sentinel — attempt Anthropic fallback

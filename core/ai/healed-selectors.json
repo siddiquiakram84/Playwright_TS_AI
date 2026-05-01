@@ -1,0 +1,16 @@
+{
+  "https://automationexercise.com/login > [data-qa=\"login-email-BROKEN\"]": {
+    "original": "[data-qa=\"login-email-BROKEN\"]",
+    "healed": "[data-qa=\"login-email\"]",
+    "url": "https://automationexercise.com/login",
+    "confidence": 0.99,
+    "timestamp": "2026-05-01T10:41:25.485Z",
+    "fingerprint": {
+      "role": null,
+      "text": "",
+      "testId": "login-email",
+      "name": "email",
+      "ariaLabel": null
+    }
+  }
+}

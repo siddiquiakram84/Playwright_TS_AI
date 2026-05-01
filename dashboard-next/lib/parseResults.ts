@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import type { RunSummary, ProjectStat, SpecRow, SpecStatus, HistoryPoint, JarvisData } from '@/types/jarvis';
 
+type BaseJarvisData = Omit<JarvisData, 'pipeline' | 'reports'>;
+
 const RESULTS_FILE = process.env.RESULTS_FILE
   ?? path.resolve(process.cwd(), '../dashboard/playwright/test-results/results.json');
 
@@ -136,7 +138,7 @@ export function loadHistory(): HistoryPoint[] {
 }
 
 // ── Main parse function ───────────────────────────────────────────────────────
-export function parseResults(): JarvisData {
+export function parseResults(): BaseJarvisData {
   if (!fs.existsSync(RESULTS_FILE)) {
     return {
       status: 'no_data', message: 'No results.json found — run tests first.',

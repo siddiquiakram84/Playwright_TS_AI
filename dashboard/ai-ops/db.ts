@@ -12,14 +12,20 @@ import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs   from 'fs';
 
-const DB_PATH = path.resolve(__dirname, 'aiops.db');
+// Resolved lazily so process.env.AIOPS_DB_PATH is read at first DB open, not at module load.
+// This prevents webpack __dirname issues from pointing to a wrong empty database.
+function resolvedDbPath(): string {
+  return process.env.AIOPS_DB_PATH ?? path.resolve(__dirname, 'aiops.db');
+}
 
 let _db: Database.Database | null = null;
+let _dbPath = '';
 
 function getDb(): Database.Database {
   if (_db) return _db;
-  _db = new Database(DB_PATH);
-  _db.pragma('journal_mode = WAL');   // write-ahead log — concurrent reads during writes
+  _dbPath = resolvedDbPath();
+  _db = new Database(_dbPath);
+  _db.pragma('journal_mode = WAL');
   _db.pragma('foreign_keys = ON');
   initSchema(_db);
   return _db;
@@ -237,9 +243,9 @@ export function getRecentHealingEvents(limit = 30): unknown[] {
   } catch { return []; }
 }
 
-export function getDbPath(): string { return DB_PATH; }
+export function getDbPath(): string { return _dbPath || resolvedDbPath(); }
 export function getDbSizeBytes(): number {
-  try { return fs.statSync(DB_PATH).size; } catch { return 0; }
+  try { return fs.statSync(getDbPath()).size; } catch { return 0; }
 }
 
 // This ai ops and jarvis dashboard revamp and build on Next.js + Node.js using TS. keep it lightweight and aligned with the ai/llm project what we are building.
