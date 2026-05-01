@@ -61,10 +61,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/budget/route.js"
     ],
-    "/_not-found/page": [
+    "/api/orchestrate/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/api/orchestrate/route.js"
+    ],
+    "/api/ingest/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/ingest/route.js"
     ]
   }
 }

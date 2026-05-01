@@ -1,0 +1,53 @@
+{
+  "scenarios": [
+    {
+      "id": "TC-REG-001",
+      "description": "Happy Path: New user signup, account creation, and account deletion",
+      "testData": {
+        "newUser": {
+          "name": "TestUser",
+          "email": "testuser_autoexercise_001@mailinator.com",
+          "day": "15",
+          "month": "6",
+          "year": "1990"
+        },
+        "accountDetails": {
+          "firstName": "Test",
+          "lastName": "User",
+          "company": "TestCorp",
+          "address1": "123 Test Street",
+          "address2": "Suite 100",
+          "country": "United States",
+          "state": "California",
+          "city": "Los Angeles",
+          "zipcode": "90001",
+          "mobile": "5551234567"
+        }
+      }
+    },
+    {
+      "id": "TC-REG-002",
+      "description": "Negative: Signup attempt with already registered email",
+      "testData": {
+        "existingUser": {
+          "name": "ExistingUser",
+          "email": "existing_registered@mailinator.com"
+        }
+      }
+    }
+  ],
+  "constants": {
+    "expectedMessages": {
+      "newUserSignupHeading": "New User Signup!",
+      "enterAccountInfoHeading": "ENTER ACCOUNT INFORMATION",
+      "accountCreated": "ACCOUNT CREATED!",
+      "accountDeleted": "ACCOUNT DELETED!",
+      "emailAlreadyExists": "Email Address already exist!"
+    },
+    "routes": {
+      "homeUrl": "/",
+      "loginUrl": "/login",
+      "deleteAccountUrl": "/delete_account"
+    }
+  }
+}

@@ -1,42 +1,345 @@
 {
   "entries": {
-    "5d3ee6f6e02c7b39791f019647774e76afe156cee88a1d0846ced6dfbd01b376": {
+    "eff0a5f46dbd6770a7ede52d221dd7b0f502b07abeacfe6c17f0f17c7ed54d33": {
       "value": {
-        "testSuite": "User Registration Suite",
-        "description": "Covers the full new user signup flow on automationexercise.com, including account creation, login verification, and account deletion, plus boundary/negative cases.",
+        "testSuite": "User Registration and Account Deletion Suite",
+        "description": "Covers new user signup flow including account creation, login verification, and account deletion on automationexercise.com",
         "tests": [
           {
-            "name": "Happy Path - Complete New User Registration and Account Deletion",
+            "name": "Happy Path: New user signup, account creation, and deletion",
             "steps": [
               {
                 "action": "navigate",
                 "target": "/",
-                "description": "Launch browser and navigate to automationexercise.com home page"
+                "description": "Launch browser and navigate to home page"
               },
               {
                 "action": "assert",
                 "target": "body",
                 "assertType": "visible",
-                "expected": "Home page is visible and fully loaded",
-                "description": "Verify home page is visible successfully"
+                "expected": "Home page is visible successfully",
+                "description": "Verify home page is loaded"
               },
               {
                 "action": "click",
                 "target": "a[href='/login']",
                 "pom": "loginPage.navigate()",
-                "description": "Click on Signup / Login button in the navigation bar"
+                "description": "Click on Signup / Login button in navbar"
               },
               {
                 "action": "assert",
-                "target": "h2:has-text('New User Signup!')",
+                "target": ".signup-form h2",
                 "assertType": "visible",
                 "expected": "New User Signup!",
-                "description": "Verify 'New User Signup!' heading is visible on the right signup form"
+                "description": "Verify New User Signup! heading is visible"
               },
               {
                 "action": "fill",
                 "target": "input[data-qa='signup-name']",
-                "value": "TestUser_AutoQA",
+                "value": "TestUser",
+                "description": "Enter name in signup form"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='signup-email']",
+                "value": "[REDACTED_EMAIL]",
+                "description": "Enter email address in signup form"
+              },
+              {
+                "action": "click",
+                "target": "button[data-qa='signup-button']",
+                "description": "Click Signup button"
+              },
+              {
+                "action": "assert",
+                "target": ".login-form h2.title",
+                "assertType": "visible",
+                "expected": "ENTER ACCOUNT INFORMATION",
+                "description": "Verify ENTER ACCOUNT INFORMATION section is visible"
+              }
+            ],
+            "dataNeeds": [
+              "newUser",
+              "accountDetails",
+              "addressDetails"
+            ],
+            "tags": [
+              "smoke",
+              "regression",
+              "signup"
+            ],
+            "priority": "critical"
+          },
+          {
+            "name": "Happy Path: Complete account information, create account, verify login, and delete account",
+            "steps": [
+              {
+                "action": "select",
+                "target": "#id_gender1",
+                "value": "Mr",
+                "description": "Select Title (Mr/Mrs)"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='password']",
+                "value": "[REDACTED_PASSWORD]",
+                "description": "Enter password"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='days']",
+                "value": "15",
+                "description": "Select day of birth"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='months']",
+                "value": "June",
+                "description": "Select month of birth"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='years']",
+                "value": "1990",
+                "description": "Select year of birth"
+              },
+              {
+                "action": "check",
+                "target": "#newsletter",
+                "description": "Select checkbox Sign up for our newsletter!"
+              },
+              {
+                "action": "check",
+                "target": "#optin",
+                "description": "Select checkbox Receive special offers from our partners!"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='first_name']",
+                "value": "Test",
+                "description": "Enter first name"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='last_name']",
+                "value": "User",
+                "description": "Enter last name"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='company']",
+                "value": "TestCompany",
+                "description": "Enter company name"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='address']",
+                "value": "123 Test Street",
+                "description": "Enter address line 1"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='address2']",
+                "value": "Suite 100",
+                "description": "Enter address line 2"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='country']",
+                "value": "United States",
+                "description": "Select country"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='state']",
+                "value": "California",
+                "description": "Enter state"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='city']",
+                "value": "Los Angeles",
+                "description": "Enter city"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='zipcode']",
+                "value": "90001",
+                "description": "Enter zipcode"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='mobile_number']",
+                "value": "5551234567",
+                "description": "Enter mobile number"
+              },
+              {
+                "action": "click",
+                "target": "button[data-qa='create-account']",
+                "description": "Click Create Account button"
+              },
+              {
+                "action": "assert",
+                "target": "h2.title b",
+                "assertType": "visible",
+                "expected": "ACCOUNT CREATED!",
+                "description": "Verify ACCOUNT CREATED! message is visible"
+              },
+              {
+                "action": "click",
+                "target": "a[data-qa='continue-button']",
+                "description": "Click Continue button after account creation"
+              },
+              {
+                "action": "assert",
+                "target": "li a b",
+                "assertType": "visible",
+                "expected": "Logged in as TestUser",
+                "description": "Verify Logged in as username is visible in navbar"
+              },
+              {
+                "action": "click",
+                "target": "a[href='/delete_account']",
+                "description": "Click Delete Account button"
+              },
+              {
+                "action": "assert",
+                "target": "h2.title b",
+                "assertType": "visible",
+                "expected": "ACCOUNT DELETED!",
+                "description": "Verify ACCOUNT DELETED! message is visible"
+              },
+              {
+                "action": "click",
+                "target": "a[data-qa='continue-button']",
+                "description": "Click Continue button after account deletion"
+              },
+              {
+                "action": "screenshot",
+                "target": "body",
+                "description": "Capture final state after account deletion flow"
+              }
+            ],
+            "dataNeeds": [
+              "newUser",
+              "accountDetails",
+              "addressDetails"
+            ],
+            "tags": [
+              "smoke",
+              "regression",
+              "account-creation"
+            ],
+            "priority": "critical"
+          },
+          {
+            "name": "Negative: Signup with already registered email",
+            "steps": [
+              {
+                "action": "navigate",
+                "target": "/login",
+                "pom": "loginPage.navigate()",
+                "description": "Navigate to login/signup page"
+              },
+              {
+                "action": "assert",
+                "target": ".signup-form h2",
+                "assertType": "visible",
+                "expected": "New User Signup!",
+                "description": "Verify New User Signup! heading is visible"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='signup-name']",
+                "value": "ExistingUser",
+                "description": "Enter name of an already registered user"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='signup-email']",
+                "value": "[REDACTED_EXISTING_EMAIL]",
+                "description": "Enter already registered email address"
+              },
+              {
+                "action": "click",
+                "target": "button[data-qa='signup-button']",
+                "description": "Click Signup button"
+              },
+              {
+                "action": "assert",
+                "target": "p.text-danger",
+                "assertType": "visible",
+                "expected": "Email Address already exist!",
+                "description": "Verify error message for duplicate email is shown"
+              },
+              {
+                "action": "screenshot",
+                "target": "p.text-danger",
+                "description": "Capture error state for duplicate email signup attempt"
+              }
+            ],
+            "dataNeeds": [
+              "existingUser"
+            ],
+            "tags": [
+              "negative",
+              "regression",
+              "signup"
+            ],
+            "priority": "high"
+          }
+        ],
+        "fixtures": [
+          "page"
+        ]
+      },
+      "operation": "plan",
+      "expiresAt": 1777645314713,
+      "hits": 0
+    },
+    "7ff719846d2078b8b86327ed387f415e8e13637fdeceaa7f38aad7a248401ee6": {
+      "value": "```typescript\nimport { test } from '../../../core/fixtures';\nimport { expect } from '@playwright/test';\nimport { ENV } from '../../../core/utils/envConfig';\nimport testData from './user-registration-account-deletion.data.json';\n\ntest.describe('User Registration and Account Deletion Suite', () => {\n  test.describe.configure({ mode: 'serial' });\n\n  /**\n   * Journey 1 & 2 are combined as a single serial flow:\n   * Signup → Fill Account Info → Create → Verify Login → Delete\n   */\n  test.describe('Happy Path: Full signup, account creation, and deletion flow', () => {\n    test.describe.configure({ mode: 'serial' });\n\n    const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-001')!;\n    const accountDetails = scenario.testData;\n\n    test('Step 1: Navigate to home page and initiate signup', async ({\n      page,\n      homePage,\n      loginPage,\n    }) => {\n      test.info().annotations.push({ type: 'feature', value: 'User Registration' });\n      test.info().annotations.push({ type: 'severity', value: 'critical' });\n      test.info().annotations.push({ type: 'tag', value: 'smoke' });\n      test.info().annotations.push({ type: 'tag', value: 'regression' });\n      test.info().annotations.push({ type: 'tag', value: 'signup' });\n\n      // Navigate to home page\n      await homePage.navigate();\n\n      // Verify home page is loaded\n      await expect(page.locator('body')).toBeVisible();\n      expect(await homePage.isLoggedIn()).toBe(false);\n\n      // Navigate to login/signup page\n      await loginPage.navigate();\n\n      // Verify New User Signup! heading is visible\n      const signupHeading = page.locator('.signup-form h2');\n      await expect(signupHeading).toBeVisible();\n      await expect(signupHeading).toContainText(\n        testData.constants.expectedMessages.signupHeading\n      );\n\n      // Fill in signup name and email using POM\n      await loginPage.initiateSignup(\n        accountDetails.signupName,\n        accountDetails.signupEmail\n      );\n\n      // Verify ENTER ACCOUNT INFORMATION section is visible\n      const accountInfoHeading = page.locator('[data-qa=\"account-info\"] h2.title, .login-form h2.title, h2.title');\n      await expect(accountInfoHeading.first()).toBeVisible();\n    });\n\n    test('Step 2: Fill account information and create account', async ({\n      page,\n      homePage,\n    }) => {\n      test.info().annotations.push({ type: 'feature', value: 'User Registration' });\n      test.info().annotations.push({ type: 'severity', value: 'critical' });\n      test.info().annotations.push({ type: 'tag', value: 'smoke' });\n      test.info().annotations.push({ type: 'tag', value: 'regression' });\n      test.info().annotations.push({ type: 'tag', value: 'account-creation' });\n\n      // Select Title (Mr)\n      await page.locator('#id_gender1').check();\n\n      // Enter password\n      await page.locator('[data-qa=\"password\"]').fill(ENV.uiUserPassword);\n\n      // Select date of birth\n      await page.locator('[data-qa=\"days\"]').selectOption(accountDetails.dobDay);\n      await page.locator('[data-qa=\"months\"]').selectOption(accountDetails.dobMonth);\n      await page.locator('[data-qa=\"years\"]').selectOption(accountDetails.dobYear);\n\n      // Check newsletter and offers checkboxes\n      await page.locator('#newsletter').check();\n      await page.locator('#optin').check();\n\n      // Verify checkboxes are checked\n      await expect(page.locator('#newsletter')).toBeChecked();\n      await expect(page.locator('#optin')).toBeChecked();\n\n      // Fill address details\n      await page.locator('[data-qa=\"first_name\"]').fill(accountDetails.firstName);\n      await page.locator('[data-qa=\"last_name\"]').fill(accountDetails.lastName);\n      await page.locator('[data-qa=\"company\"]').fill(accountDetails.company);\n      await page.locator('[data-qa=\"address\"]').fill(accountDetails.address1);\n      await page.locator('[data-qa=\"address2\"]').fill(accountDetails.address2);\n      await page.locator('[data-qa=\"country\"]').selectOption(accountDetails.country);\n      await page.locator('[data-qa=\"state\"]').fill(accountDetails.state);\n      await page.locator('[data-qa=\"city\"]').fill(accountDetails.city);\n      await page.locator('[data-qa=\"zipcode\"]').fill(accountDetails.zipcode);\n      await page.locator('[data-qa=\"mobile_number\"]').fill(accountDetails.mobileNumber);\n\n      // Click Create Account button\n      await page.locator('[data-qa=\"create-account\"]').click();\n\n      // Verify ACCOUNT CREATED! message is visible\n      const accountCreatedMsg = page.locator('h2.title b');\n      await expect(accountCreatedMsg).toBeVisible();\n      await expect(accountCreatedMsg).toContainText(\n        testData.constants.expectedMessages.accountCreated\n      );\n\n      // Click Continue button after account creation\n      await page.locator('[data-qa=\"continue-button\"]').click();\n\n      // Verify logged in as username is visible in navbar\n      const loggedInUser = homePage.loggedInUser;\n      await expect(loggedInUser).toBeVisible();\n      await expect(loggedInUser).toContainText(accountDetails.signupName);\n    });\n\n    test('Step 3: Delete account and verify deletion', async ({ page }) => {\n      test.info().annotations.push({ type: 'feature', value: 'User Registration' });\n      test.info().annotations.push({ type: 'severity', value: 'critical' });\n      test.info().annotations.push({ type: 'tag', value: 'smoke' });\n      test.info().annotations.push({ type: 'tag', value: 'regression' });\n      test.info().annotations.push({ type: 'tag', value: 'account-creation' });\n\n      // Click Delete Account button\n      await page.locator(\"a[href='/delete_account']\").click();\n\n      // Verify ACCOUNT DELETED! message is visible\n      const accountDeletedMsg = page.locator('h2.title b');\n      await expect(accountDeletedMsg).toBeVisible();\n      await expect(accountDeletedMsg).toContainText(\n        testData.constants.expectedMessages.accountDeleted\n      );\n\n      // Click Continue button after account deletion\n      await page.locator('[data-qa=\"continue-button\"]').click();\n\n      // Capture final state after account deletion flow\n      await page.screenshot({\n        path: 'test-results/screenshots/account-deletion-complete.png',\n        fullPage: true,\n      });\n\n      // Verify we are back on home page / not logged in\n      await expect(page.locator('body')).toBeVisible();\n      expect(await page.locator(\"a[href='/login']\").isVisible()).toBe(true);\n    });\n  });\n\n  /**\n   * Journey 3: Negative — Signup with already registered email\n   */\n  test.describe('Negative: Signup with already registered email', () => {\n    const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-002')!;\n    const existingUser = scenario.testData;\n\n    test('Should display error when signing up with a duplicate email', async ({\n      page,\n      loginPage,\n    }) => {\n      test.info().annotations.push({ type: 'feature', value: 'User Registration' });\n      test.info().annotations.push({ type: 'severity', value: 'high' });\n      test.info().annotations.push({ type: 'tag', value: 'negative' });\n      test.info().annotations.push({ type: 'tag', value: 'regression' });\n      test.info().annotations.push({ type: 'tag', value: 'signup' });\n\n      // Navigate to login/signup page\n      await loginPage.navigate();\n\n      // Verify New User Signup! heading is visible\n      const signupHeading = page.locator('.signup-form h2');\n      await expect(signupHeading).toBeVisible();\n      await expect(signupHeading).toContainText(\n        testData.constants.expectedMessages.signupHeading\n      );\n\n      // Enter name and already-registered email\n      await loginPage.initiateSignup(\n        existingUser.signupName,\n        ENV.uiUserEmail\n      );\n\n      // Verify error message for duplicate email is shown\n      const errorMsg = page.locator('p.text-danger');\n      await expect(errorMsg).toBeVisible();\n      await expect(errorMsg).toContainText(\n        testData.constants.expectedMessages.duplicateEmailError\n      );\n\n      // Soft-assert the error text is exact\n      expect.soft(await errorMsg.textContent()).toContain(\n        testData.constants.expectedMessages.duplicateEmailError\n      );\n\n      // Capture error state screenshot\n      await page.screenshot({\n        path: 'test-results/screenshots/duplicate-email-error.png',\n        fullPage: false,\n      });\n    });\n  });\n});\n```\n\n```json\n{\n  \"scenarios\": [\n    {\n      \"id\": \"TC-REG-001\",\n      \"description\": \"Happy Path: New user signup, account creation, login verification, and deletion\",\n      \"testData\": {\n        \"signupName\": \"TestUser\",\n        \"signupEmail\": \"testuser_playwright_auto@mailinator.com\",\n        \"dobDay\": \"15\",\n        \"dobMonth\": \"June\",\n        \"dobYear\": \"1990\",\n        \"firstName\": \"Test\",\n        \"lastName\": \"User\",\n        \"company\": \"TestCompany\",\n        \"address1\": \"123 Test Street\",\n        \"address2\": \"Suite 100\",\n        \"country\": \"United States\",\n        \"state\": \"California\",\n        \"city\": \"Los Angeles\",\n        \"zipcode\": \"90001\",\n        \"mobileNumber\": \"5551234567\"\n      }\n    },\n    {\n      \"id\": \"TC-REG-002\",\n      \"description\": \"Negative: Signup with already registered email\",\n      \"testData\": {\n        \"signupName\": \"ExistingUser\"\n      }\n    }\n  ],\n  \"constants\": {\n    \"expectedMessages\": {\n      \"signupHeading\": \"New User Signup!\",\n      \"enterAccountInfo\": \"ENTER ACCOUNT INFORMATION\",\n      \"accountCreated\": \"ACCOUNT CREATED!\",\n      \"accountDeleted\": \"ACCOUNT DELETED!\",\n      \"duplicateEmailError\": \"Email Address already exist!\"\n    },\n    \"routes\": {\n      \"homeUrl\": \"/\",\n      \"loginUrl\": \"/login\",\n      \"deleteAccountUrl\": \"/delete_account\"\n    }\n  }\n}\n```",
+      "operation": "write",
+      "expiresAt": 1777645341974,
+      "hits": 0
+    },
+    "138898e7686c6151515edce77f8f6d68a1c5c9cfe9ec5f38778e44563badaae5": {
+      "value": {
+        "testSuite": "User Registration Flow",
+        "description": "Covers new user signup from home page through account creation, login verification, and account deletion on automationexercise.com",
+        "tests": [
+          {
+            "name": "Happy Path: New user signup, account creation, and account deletion",
+            "steps": [
+              {
+                "action": "navigate",
+                "target": "/",
+                "description": "Launch browser and navigate to home page"
+              },
+              {
+                "action": "assert",
+                "target": "#header",
+                "assertType": "visible",
+                "expected": "Home page is visible successfully",
+                "description": "Verify home page is loaded"
+              },
+              {
+                "action": "click",
+                "target": "a[href='/login']",
+                "pom": "loginPage.navigate()",
+                "description": "Click on Signup / Login button in the navigation header"
+              },
+              {
+                "action": "assert",
+                "target": ".signup-form h2",
+                "assertType": "visible",
+                "expected": "New User Signup!",
+                "description": "Verify New User Signup! heading is visible on the right form"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='signup-name']",
+                "value": "TestUser",
                 "description": "Enter name in the signup form"
               },
               {
@@ -48,97 +351,125 @@
               {
                 "action": "click",
                 "target": "button[data-qa='signup-button']",
-                "description": "Click Signup button to proceed to account information page"
+                "description": "Click the Signup button to proceed to account information form"
               },
               {
                 "action": "assert",
-                "target": "h2.title:has-text('Enter Account Information')",
+                "target": ".login-form h2.title",
                 "assertType": "visible",
                 "expected": "ENTER ACCOUNT INFORMATION",
-                "description": "Verify 'ENTER ACCOUNT INFORMATION' section is visible"
-              }
-            ],
-            "dataNeeds": [
-              "newUser",
-              "accountDetails",
-              "addressDetails"
-            ],
-            "tags": [
-              "smoke",
-              "regression",
-              "signup"
-            ],
-            "priority": "critical"
-          },
-          {
-            "name": "Fill Account Information and Create Account",
-            "steps": [
+                "description": "Verify ENTER ACCOUNT INFORMATION heading is visible"
+              },
               {
-                "action": "click",
+                "action": "check",
                 "target": "input#id_gender1",
-                "description": "Select Title - Mr radio button"
+                "description": "Select Title (Mr.) radio button"
               },
               {
                 "action": "fill",
                 "target": "input[data-qa='password']",
                 "value": "[REDACTED_PASSWORD]",
-                "description": "Enter password in the account information form"
+                "description": "Fill in password field"
               },
               {
                 "action": "select",
                 "target": "select[data-qa='days']",
                 "value": "15",
-                "description": "Select day of birth as 15"
+                "description": "Select day of birth"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='months']",
+                "value": "6",
+                "description": "Select month of birth"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='years']",
+                "value": "1990",
+                "description": "Select year of birth"
               },
               {
                 "action": "check",
                 "target": "input#newsletter",
-                "description": "Select checkbox for Sign up for our newsletter!"
+                "description": "Select checkbox Sign up for our newsletter!"
               },
               {
                 "action": "check",
                 "target": "input#optin",
-                "description": "Select checkbox for Receive special offers from our partners!"
+                "description": "Select checkbox Receive special offers from our partners!"
               },
               {
                 "action": "fill",
                 "target": "input[data-qa='first_name']",
                 "value": "Test",
-                "description": "Enter First name in address information section"
+                "description": "Fill in first name"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='last_name']",
+                "value": "User",
+                "description": "Fill in last name"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='company']",
+                "value": "TestCorp",
+                "description": "Fill in company name"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='address']",
+                "value": "123 Test Street",
+                "description": "Fill in address line 1"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='address2']",
+                "value": "Suite 100",
+                "description": "Fill in address line 2"
+              },
+              {
+                "action": "select",
+                "target": "select[data-qa='country']",
+                "value": "United States",
+                "description": "Select country from dropdown"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='state']",
+                "value": "California",
+                "description": "Fill in state"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='city']",
+                "value": "Los Angeles",
+                "description": "Fill in city"
+              },
+              {
+                "action": "fill",
+                "target": "input[data-qa='zipcode']",
+                "value": "90001",
+                "description": "Fill in zipcode"
               },
               {
                 "action": "fill",
                 "target": "input[data-qa='mobile_number']",
-                "value": "9876543210",
-                "description": "Enter Mobile Number in address information section"
+                "value": "5551234567",
+                "description": "Fill in mobile number"
               },
               {
                 "action": "click",
                 "target": "button[data-qa='create-account']",
-                "description": "Click Create Account button to submit the registration form"
-              }
-            ],
-            "dataNeeds": [
-              "newUser",
-              "accountDetails",
-              "addressDetails"
-            ],
-            "tags": [
-              "smoke",
-              "regression",
-              "signup"
-            ],
-            "priority": "critical"
-          },
-          {
-            "name": "Verify Account Created and Login State, then Delete Account",
-            "steps": [
+                "description": "Click Create Account button"
+              },
               {
                 "action": "assert",
-                "target": "h2[data-qa='account-created']",
+                "target": "h2.title b",
                 "assertType": "visible",
                 "expected": "ACCOUNT CREATED!",
-                "description": "Verify 'ACCOUNT CREATED!' message is visible after successful registration"
+                "description": "Verify ACCOUNT CREATED! message is displayed"
               },
               {
                 "action": "click",
@@ -147,86 +478,89 @@
               },
               {
                 "action": "assert",
-                "target": "li:has-text('Logged in as')",
+                "target": "li a.nav-link:has-text('Logged in as')",
                 "assertType": "visible",
-                "expected": "Logged in as TestUser_AutoQA",
-                "description": "Verify that 'Logged in as username' is visible in the navigation bar"
+                "expected": "Logged in as TestUser",
+                "description": "Verify user is logged in and username is displayed in the header"
               },
               {
                 "action": "click",
                 "target": "a[href='/delete_account']",
-                "description": "Click Delete Account button to remove the newly created account"
+                "description": "Click Delete Account button"
               },
               {
                 "action": "assert",
-                "target": "h2[data-qa='account-deleted']",
+                "target": "h2.title b",
                 "assertType": "visible",
                 "expected": "ACCOUNT DELETED!",
-                "description": "Verify 'ACCOUNT DELETED!' message is visible after deletion"
+                "description": "Verify ACCOUNT DELETED! message is displayed"
               },
               {
                 "action": "click",
                 "target": "a[data-qa='continue-button']",
-                "description": "Click Continue button after account deletion to return to home page"
+                "description": "Click Continue button after account deletion"
               },
               {
-                "action": "assert",
-                "target": "a[href='/login']:has-text('Signup / Login')",
-                "assertType": "visible",
-                "expected": "Signup / Login link visible, confirming user is logged out",
-                "description": "Verify user is redirected to home and is no longer logged in"
+                "action": "screenshot",
+                "target": "body",
+                "description": "Capture final state after account deletion flow completes"
               }
             ],
             "dataNeeds": [
-              "newUser"
+              "newUser",
+              "accountDetails"
             ],
             "tags": [
               "smoke",
               "regression",
-              "signup",
-              "cleanup"
+              "auth"
             ],
             "priority": "critical"
           },
           {
-            "name": "Negative - Signup with Already Registered Email",
+            "name": "Negative: Signup attempt with already registered email",
             "steps": [
               {
                 "action": "navigate",
                 "target": "/login",
                 "pom": "loginPage.navigate()",
-                "description": "Navigate to login/signup page"
+                "description": "Navigate directly to login/signup page"
               },
               {
                 "action": "assert",
-                "target": "h2:has-text('New User Signup!')",
+                "target": ".signup-form h2",
                 "assertType": "visible",
                 "expected": "New User Signup!",
-                "description": "Verify the signup form is visible"
+                "description": "Verify New User Signup! form is visible"
               },
               {
                 "action": "fill",
                 "target": "input[data-qa='signup-name']",
                 "value": "ExistingUser",
-                "description": "Enter a name in the signup form"
+                "description": "Enter name for an already registered account"
               },
               {
                 "action": "fill",
                 "target": "input[data-qa='signup-email']",
                 "value": "[REDACTED_EXISTING_EMAIL]",
-                "description": "Enter an already registered email address"
+                "description": "Enter an email address that already exists in the system"
               },
               {
                 "action": "click",
                 "target": "button[data-qa='signup-button']",
-                "description": "Click Signup button to attempt registration with duplicate email"
+                "description": "Click Signup button with duplicate email"
               },
               {
                 "action": "assert",
-                "target": "p:has-text('Email Address already exist!')",
+                "target": ".signup-form p",
                 "assertType": "visible",
                 "expected": "Email Address already exist!",
-                "description": "Verify error message is shown for duplicate email registration"
+                "description": "Verify error message is shown for duplicate email address"
+              },
+              {
+                "action": "screenshot",
+                "target": "body",
+                "description": "Capture error state for duplicate email signup attempt"
               }
             ],
             "dataNeeds": [
@@ -234,113 +568,10 @@
             ],
             "tags": [
               "regression",
-              "negative",
-              "signup"
+              "auth",
+              "negative"
             ],
             "priority": "high"
-          },
-          {
-            "name": "Negative - Signup with Invalid Email Format",
-            "steps": [
-              {
-                "action": "navigate",
-                "target": "/login",
-                "pom": "loginPage.navigate()",
-                "description": "Navigate to the login/signup page"
-              },
-              {
-                "action": "fill",
-                "target": "input[data-qa='signup-name']",
-                "value": "InvalidEmailUser",
-                "description": "Enter name in the signup form"
-              },
-              {
-                "action": "fill",
-                "target": "input[data-qa='signup-email']",
-                "value": "not-an-email",
-                "description": "Enter an invalid email format (missing @ and domain)"
-              },
-              {
-                "action": "click",
-                "target": "button[data-qa='signup-button']",
-                "description": "Click Signup button with invalid email"
-              },
-              {
-                "action": "assert",
-                "target": "input[data-qa='signup-email']:invalid",
-                "assertType": "visible",
-                "expected": "Browser-level HTML5 validation error on email field",
-                "description": "Verify that HTML5 validation prevents submission with invalid email format"
-              },
-              {
-                "action": "screenshot",
-                "target": "body",
-                "description": "Capture screenshot of validation error state for reporting"
-              }
-            ],
-            "dataNeeds": [
-              "invalidEmailData"
-            ],
-            "tags": [
-              "regression",
-              "negative",
-              "boundary",
-              "signup"
-            ],
-            "priority": "medium"
-          },
-          {
-            "name": "Negative - Signup with Empty Name Field",
-            "steps": [
-              {
-                "action": "navigate",
-                "target": "/login",
-                "pom": "loginPage.navigate()",
-                "description": "Navigate to the login/signup page"
-              },
-              {
-                "action": "assert",
-                "target": "h2:has-text('New User Signup!')",
-                "assertType": "visible",
-                "expected": "New User Signup!",
-                "description": "Verify the signup form is visible"
-              },
-              {
-                "action": "fill",
-                "target": "input[data-qa='signup-email']",
-                "value": "[REDACTED_EMAIL]",
-                "description": "Enter a valid email address but leave name field empty"
-              },
-              {
-                "action": "click",
-                "target": "button[data-qa='signup-button']",
-                "description": "Click Signup button with empty name field"
-              },
-              {
-                "action": "assert",
-                "target": "input[data-qa='signup-name']:invalid",
-                "assertType": "visible",
-                "expected": "Browser-level HTML5 validation error on name field",
-                "description": "Verify that HTML5 validation prevents submission when name is empty"
-              },
-              {
-                "action": "assert",
-                "target": "h2:has-text('Enter Account Information')",
-                "assertType": "hidden",
-                "expected": "ENTER ACCOUNT INFORMATION page should NOT appear",
-                "description": "Confirm user is not advanced to the account information step"
-              }
-            ],
-            "dataNeeds": [
-              "partialSignupData"
-            ],
-            "tags": [
-              "regression",
-              "negative",
-              "boundary",
-              "signup"
-            ],
-            "priority": "medium"
           }
         ],
         "fixtures": [
@@ -348,103 +579,81 @@
         ]
       },
       "operation": "plan",
-      "expiresAt": 1777634134540,
+      "expiresAt": 1777646072629,
       "hits": 0
     },
-    "e761f66ae360a425f847276eda26fd90172490dec3029a09eaf673fbe85b4313": {
-      "value": "```typescript\nimport { test } from '../../../core/fixtures';\nimport { expect } from '@playwright/test';\nimport testData from './user-registration.data.json';\n\n/**\n * User Registration Suite\n * Covers the full new user signup flow on automationexercise.com,\n * including account creation, login verification, and account deletion,\n * plus boundary/negative cases.\n */\n\n// ─── Happy Path ────────────────────────────────────────────────────────────────\ntest.describe('Happy Path - Complete New User Registration Flow', () => {\n  test.describe.configure({ mode: 'serial' });\n\n  const happyPath = testData.scenarios.find((s) => s.id === 'TC-REG-001')!;\n  const accountInfo = testData.scenarios.find((s) => s.id === 'TC-REG-002')!;\n  const verifyDelete = testData.scenarios.find((s) => s.id === 'TC-REG-003')!;\n\n  // Unique email per run to avoid conflicts with previously registered accounts\n  const uniqueEmail = `testuser_${Date.now()}@autoqa.dev`;\n\n  test('TC-REG-001 | Navigate to home and initiate signup', async ({\n    page,\n    homePage,\n    loginPage,\n  }) => {\n    test.info().annotations.push({ type: 'feature', value: 'Registration' });\n    test.info().annotations.push({ type: 'severity', value: 'critical' });\n    test.info().annotations.push({ type: 'tag', value: 'smoke' });\n\n    // Step 1: Navigate to home\n    await homePage.navigate();\n    await expect(page.locator('body')).toBeVisible();\n\n    // Step 2: Go to Login / Signup page\n    await homePage.goToLogin();\n    await expect(page.locator(\"h2:has-text('New User Signup!')\")).toBeVisible();\n\n    // Step 3: Fill signup form\n    await loginPage.initiateSignup(\n      happyPath.testData.signupName as string,\n      uniqueEmail\n    );\n\n    // Step 4: Assert navigation to account information page\n    await expect(\n      page.locator(\"h2.title:has-text('Enter Account Information')\")\n    ).toBeVisible();\n  });\n\n  test('TC-REG-002 | Fill account information and create account', async ({\n    page,\n  }) => {\n    test.info().annotations.push({ type: 'feature', value: 'Registration' });\n    test.info().annotations.push({ type: 'severity', value: 'critical' });\n    test.info().annotations.push({ type: 'tag', value: 'smoke' });\n\n    // Select gender\n    await page.locator('input#id_gender1').check();\n\n    // Enter password\n    await page.locator('[data-qa=\"password\"]').fill(accountInfo.testData.password as string);\n\n    // Select birth day / month / year\n    await page.locator('[data-qa=\"days\"]').selectOption(accountInfo.testData.birthDay as string);\n    await page.locator('[data-qa=\"months\"]').selectOption(accountInfo.testData.birthMonth as string);\n    await page.locator('[data-qa=\"years\"]').selectOption(accountInfo.testData.birthYear as string);\n\n    // Opt-in checkboxes\n    await page.locator('input#newsletter').check();\n    await page.locator('input#optin').check();\n\n    // Address information\n    await page.locator('[data-qa=\"first_name\"]').fill(accountInfo.testData.firstName as string);\n    await page.locator('[data-qa=\"last_name\"]').fill(accountInfo.testData.lastName as string);\n    await page.locator('[data-qa=\"company\"]').fill(accountInfo.testData.company as string);\n    await page.locator('[data-qa=\"address\"]').fill(accountInfo.testData.address as string);\n    await page.locator('[data-qa=\"country\"]').selectOption(accountInfo.testData.country as string);\n    await page.locator('[data-qa=\"state\"]').fill(accountInfo.testData.state as string);\n    await page.locator('[data-qa=\"city\"]').fill(accountInfo.testData.city as string);\n    await page.locator('[data-qa=\"zipcode\"]').fill(accountInfo.testData.zipcode as string);\n    await page.locator('[data-qa=\"mobile_number\"]').fill(accountInfo.testData.mobileNumber as string);\n\n    // Submit\n    await page.locator('[data-qa=\"create-account\"]').click();\n\n    // Assert account created heading is visible\n    await expect(page.locator('[data-qa=\"account-created\"]')).toBeVisible();\n    expect.soft(\n      await page.locator('[data-qa=\"account-created\"]').textContent()\n    ).toMatch(/account created/i);\n  });\n\n  test('TC-REG-003 | Verify logged-in state then delete account', async ({\n    page,\n  }) => {\n    test.info().annotations.push({ type: 'feature', value: 'Registration' });\n    test.info().annotations.push({ type: 'severity', value: 'critical' });\n    test.info().annotations.push({ type: 'tag', value: 'cleanup' });\n\n    // Click Continue after account creation\n    await page.locator('[data-qa=\"continue-button\"]').click();\n\n    // Assert logged-in username in nav\n    const loggedInNav = page.locator(\"li:has-text('Logged in as')\");\n    await expect(loggedInNav).toBeVisible();\n    expect.soft(await loggedInNav.textContent()).toContain(\n      verifyDelete.testData.expectedUsername as string\n    );\n\n    // Delete account\n    await page.locator(\"a[href='/delete_account']\").click();\n    await expect(page.locator('[data-qa=\"account-deleted\"]')).toBeVisible();\n    expect.soft(\n      await page.locator('[data-qa=\"account-deleted\"]').textContent()\n    ).toMatch(/account deleted/i);\n\n    // Continue after deletion — should return to home as logged-out user\n    await page.locator('[data-qa=\"continue-button\"]').click();\n    await expect(\n      page.locator(\"a[href='/login']:has-text('Signup / Login')\")\n    ).toBeVisible();\n  });\n});\n\n// ─── Negative: Already Registered Email ───────────────────────────────────────\ntest.describe('Negative - Signup with Already Registered Email', () => {\n  const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-004')!;\n\n  test('TC-REG-004 | Shows error when registering with an existing email', async ({\n    page,\n    loginPage,\n    homePage,\n  }) => {\n    test.info().annotations.push({ type: 'feature', value: 'Registration' });\n    test.info().annotations.push({ type: 'severity', value: 'high' });\n    test.info().annotations.push({ type: 'tag', value: 'negative' });\n\n    await homePage.navigate();\n    await loginPage.navigate();\n\n    await expect(page.locator(\"h2:has-text('New User Signup!')\")).toBeVisible();\n\n    // Use the POM initiateSignup which clicks the signup button internally\n    await loginPage.initiateSignup(\n      scenario.testData.signupName as string,\n      scenario.testData.existingEmail as string\n    );\n\n    // Assert duplicate-email error\n    const errorMsg = page.locator(\"p:has-text('Email Address already exist!')\");\n    await expect(errorMsg).toBeVisible();\n    expect.soft(await errorMsg.textContent()).toContain(\n      testData.constants.expectedMessages.duplicateEmailError\n    );\n  });\n});\n\n// ─── Negative: Invalid Email Format ───────────────────────────────────────────\ntest.describe('Negative - Signup with Invalid Email Format', () => {\n  const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-005')!;\n\n  test('TC-REG-005 | Browser HTML5 validation blocks invalid email format', async ({\n    page,\n    loginPage,\n    homePage,\n  }) => {\n    test.info().annotations.push({ type: 'feature', value: 'Registration' });\n    test.info().annotations.push({ type: 'severity', value: 'medium' });\n    test.info().annotations.push({ type: 'tag', value: 'boundary' });\n\n    await homePage.navigate();\n    await loginPage.navigate();\n\n    await page.locator('[data-qa=\"signup-name\"]').fill(scenario.testData.signupName as string);\n    await page.locator('[data-qa=\"signup-email\"]').fill(scenario.testData.invalidEmail as string);\n    await page.locator('[data-qa=\"signup-button\"]').click();\n\n    // HTML5 validation: the email input should be in an invalid state\n    const emailInput = page.locator('[data-qa=\"signup-email\"]');\n    const validationMsg = await emailInput.evaluate(\n      (el: HTMLInputElement) => el.validationMessage\n    );\n    expect(validationMsg).not.toBe('');\n\n    // User should NOT have navigated away from the signup page\n    await expect(page.locator(\"h2:has-text('New User Signup!')\")).toBeVisible();\n\n    // Capture screenshot for reporting\n    await page.screenshot({ path: 'test-results/TC-REG-005-invalid-email-validation.png' });\n  });\n});\n\n// ─── Negative: Empty Name Field ────────────────────────────────────────────────\ntest.describe('Negative - Signup with Empty Name Field', () => {\n  const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-006')!;\n\n  test('TC-REG-006 | Browser HTML5 validation blocks submission when name is empty', async ({\n    page,\n    loginPage,\n    homePage,\n  }) => {\n    test.info().annotations.push({ type: 'feature', value: 'Registration' });\n    test.info().annotations.push({ type: 'severity', value: 'medium' });\n    test.info().annotations.push({ type: 'tag', value: 'boundary' });\n\n    await homePage.navigate();\n    await loginPage.navigate();\n\n    await expect(page.locator(\"h2:has-text('New User Signup!')\")).toBeVisible();\n\n    // Leave name empty, fill only email\n    await page.locator('[data-qa=\"signup-email\"]').fill(scenario.testData.emailOnly as string);\n    await page.locator('[data-qa=\"signup-button\"]').click();\n\n    // HTML5 validation: name input should be invalid (required)\n    const nameInput = page.locator('[data-qa=\"signup-name\"]');\n    const validationMsg = await nameInput.evaluate(\n      (el: HTMLInputElement) => el.validationMessage\n    );\n    expect(validationMsg).not.toBe('');\n\n    // Confirm user has NOT advanced to account information step\n    await expect(\n      page.locator(\"h2.title:has-text('Enter Account Information')\")\n    ).toBeHidden();\n  });\n});\n```\n\n```json\n{\n  \"scenarios\": [\n    {\n      \"id\": \"TC-REG-001\",\n      \"description\": \"Navigate to home and initiate signup with a new unique email\",\n      \"testData\": {\n        \"signupName\": \"TestUser_AutoQA\"\n      }\n    },\n    {\n      \"id\": \"TC-REG-002\",\n      \"description\": \"Fill full account information form and submit to create account\",\n      \"testData\": {\n        \"password\": \"Test@1234Secure\",\n        \"birthDay\": \"15\",\n        \"birthMonth\": \"6\",\n        \"birthYear\": \"1995\",\n        \"firstName\": \"Test\",\n        \"lastName\": \"AutoQA\",\n        \"company\": \"AutoQA Corp\",\n        \"address\": \"123 Test Street\",\n        \"country\": \"United States\",\n        \"state\": \"California\",\n        \"city\": \"Los Angeles\",\n        \"zipcode\": \"90001\",\n        \"mobileNumber\": \"9876543210\"\n      }\n    },\n    {\n      \"id\": \"TC-REG-003\",\n      \"description\": \"Verify logged-in state after account creation, then delete account\",\n      \"testData\": {\n        \"expectedUsername\": \"TestUser_AutoQA\"\n      }\n    },\n    {\n      \"id\": \"TC-REG-004\",\n      \"description\": \"Attempt signup with an already registered email address\",\n      \"testData\": {\n        \"signupName\": \"ExistingUser\",\n        \"existingEmail\": \"registered_user@automationexercise.com\"\n      }\n    },\n    {\n      \"id\": \"TC-REG-005\",\n      \"description\": \"Attempt signup with an invalid email format to trigger HTML5 validation\",\n      \"testData\": {\n        \"signupName\": \"InvalidEmailUser\",\n        \"invalidEmail\": \"not-an-email\"\n      }\n    },\n    {\n      \"id\": \"TC-REG-006\",\n      \"description\": \"Attempt signup with an empty name field to trigger HTML5 required validation\",\n      \"testData\": {\n        \"emailOnly\": \"partial_signup_test@autoqa.dev\"\n      }\n    }\n  ],\n  \"constants\": {\n    \"expectedMessages\": {\n      \"duplicateEmailError\": \"Email Address already exist!\",\n      \"accountCreated\": \"ACCOUNT CREATED!\",\n      \"accountDeleted\": \"ACCOUNT DELETED!\",\n      \"newUserSignupHeading\": \"New User Signup!\",\n      \"enterAccountInfoHeading\": \"Enter Account Information\"\n    },\n    \"routes\": {\n      \"homeUrl\": \"/\",\n      \"loginUrl\": \"/login\",\n      \"deleteAccountUrl\": \"/delete_account\",\n      \"productsUrl\": \"/products\"\n    }\n  }\n}\n```",
+    "813a8bab3a6da726b24d2b3ec7484c6589d992f4bf00f8d96bdb0c3e1c216f21": {
+      "value": "```typescript\nimport { test } from '../../../core/fixtures';\nimport { expect } from '@playwright/test';\nimport testData from './user-registration-flow.data.json';\nimport { ENV } from '../../../core/utils/envConfig';\n\n// ─── Happy Path Suite ───────────────────────────────────────────────────────\n\ntest.describe('User Registration Flow – Happy Path', () => {\n  test.describe.configure({ mode: 'serial' });\n\n  test(\n    'TC-REG-001: New user signup, account creation, and account deletion',\n    async ({ page, homePage, loginPage }) => {\n      test.info().annotations.push({ type: 'feature', value: 'Registration' });\n      test.info().annotations.push({ type: 'severity', value: 'critical' });\n      test.info().annotations.push({ type: 'tags', value: 'smoke,regression,auth' });\n\n      const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-001')!;\n      const { newUser, accountDetails } = scenario.testData as {\n        newUser: {\n          name: string;\n          email: string;\n          day: string;\n          month: string;\n          year: string;\n        };\n        accountDetails: {\n          firstName: string;\n          lastName: string;\n          company: string;\n          address1: string;\n          address2: string;\n          country: string;\n          state: string;\n          city: string;\n          zipcode: string;\n          mobile: string;\n        };\n      };\n\n      // ── Step 1: Navigate to home page ─────────────────────────────────────\n      await homePage.navigate();\n      await expect(page.locator('#header')).toBeVisible();\n\n      // ── Step 2: Go to Login / Signup page ─────────────────────────────────\n      await loginPage.navigate();\n      await expect(page.locator('.signup-form h2')).toBeVisible();\n      await expect(page.locator('.signup-form h2')).toHaveText(\n        testData.constants.expectedMessages.newUserSignupHeading\n      );\n\n      // ── Step 3: Initiate signup ────────────────────────────────────────────\n      await loginPage.initiateSignup(newUser.name, newUser.email);\n\n      // ── Step 4: Verify account information form ────────────────────────────\n      await expect(page.locator('[data-qa=\"account-info\"] h2.title, .login-form h2.title')).toBeVisible();\n      await expect(\n        page.locator('[data-qa=\"account-info\"] h2.title b, .login-form h2.title b')\n      ).toHaveText(testData.constants.expectedMessages.enterAccountInfoHeading);\n\n      // ── Step 5: Fill account details ──────────────────────────────────────\n      await page.locator('input#id_gender1').check();\n      await page.locator('[data-qa=\"password\"]').fill(ENV.uiUserPassword);\n      await page.locator('[data-qa=\"days\"]').selectOption(newUser.day);\n      await page.locator('[data-qa=\"months\"]').selectOption(newUser.month);\n      await page.locator('[data-qa=\"years\"]').selectOption(newUser.year);\n      await page.locator('input#newsletter').check();\n      await page.locator('input#optin').check();\n\n      // ── Step 6: Fill address information ──────────────────────────────────\n      await page.locator('[data-qa=\"first_name\"]').fill(accountDetails.firstName);\n      await page.locator('[data-qa=\"last_name\"]').fill(accountDetails.lastName);\n      await page.locator('[data-qa=\"company\"]').fill(accountDetails.company);\n      await page.locator('[data-qa=\"address\"]').fill(accountDetails.address1);\n      await page.locator('[data-qa=\"address2\"]').fill(accountDetails.address2);\n      await page.locator('[data-qa=\"country\"]').selectOption(accountDetails.country);\n      await page.locator('[data-qa=\"state\"]').fill(accountDetails.state);\n      await page.locator('[data-qa=\"city\"]').fill(accountDetails.city);\n      await page.locator('[data-qa=\"zipcode\"]').fill(accountDetails.zipcode);\n      await page.locator('[data-qa=\"mobile_number\"]').fill(accountDetails.mobile);\n\n      // ── Step 7: Create account ─────────────────────────────────────────────\n      await page.locator('[data-qa=\"create-account\"]').click();\n\n      // ── Step 8: Verify account created ────────────────────────────────────\n      await expect(page.locator('h2.title b')).toBeVisible();\n      await expect(page.locator('h2.title b')).toHaveText(\n        testData.constants.expectedMessages.accountCreated\n      );\n\n      // ── Step 9: Continue to home ──────────────────────────────────────────\n      await page.locator('[data-qa=\"continue-button\"]').click();\n\n      // ── Step 10: Verify logged in ─────────────────────────────────────────\n      await expect(homePage.loggedInUser).toBeVisible();\n      const loggedInUsername = await homePage.getLoggedInUsername();\n      expect(loggedInUsername).toContain(newUser.name);\n\n      // ── Step 11: Delete account ───────────────────────────────────────────\n      await page.locator(\"a[href='/delete_account']\").click();\n\n      await expect(page.locator('h2.title b')).toBeVisible();\n      await expect(page.locator('h2.title b')).toHaveText(\n        testData.constants.expectedMessages.accountDeleted\n      );\n\n      // ── Step 12: Continue after deletion ─────────────────────────────────\n      await page.locator('[data-qa=\"continue-button\"]').click();\n\n      // ── Step 13: Screenshot final state ──────────────────────────────────\n      await page.screenshot({ path: 'test-results/TC-REG-001-final-state.png', fullPage: true });\n    }\n  );\n});\n\n// ─── Negative Case Suite ─────────────────────────────────────────────────────\n\ntest.describe('User Registration Flow – Negative Cases', () => {\n  test(\n    'TC-REG-002: Signup attempt with already registered email shows error',\n    async ({ page, loginPage }) => {\n      test.info().annotations.push({ type: 'feature', value: 'Registration' });\n      test.info().annotations.push({ type: 'severity', value: 'high' });\n      test.info().annotations.push({ type: 'tags', value: 'regression,auth,negative' });\n\n      const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-002')!;\n      const { existingUser } = scenario.testData as {\n        existingUser: { name: string; email: string };\n      };\n\n      // ── Step 1: Navigate to login/signup page ─────────────────────────────\n      await loginPage.navigate();\n\n      // ── Step 2: Verify signup form is visible ─────────────────────────────\n      await expect(page.locator('.signup-form h2')).toBeVisible();\n      await expect(page.locator('.signup-form h2')).toHaveText(\n        testData.constants.expectedMessages.newUserSignupHeading\n      );\n\n      // ── Step 3: Attempt signup with existing email ────────────────────────\n      await loginPage.initiateSignup(existingUser.name, existingUser.email);\n\n      // ── Step 4: Verify duplicate email error is shown ─────────────────────\n      await expect(page.locator('.signup-form p')).toBeVisible();\n      await expect.soft(page.locator('.signup-form p')).toHaveText(\n        testData.constants.expectedMessages.emailAlreadyExists\n      );\n\n      // Confirm user is NOT navigated away from the signup page\n      expect.soft(page.url()).toContain(testData.constants.routes.loginUrl);\n\n      // ── Step 5: Screenshot error state ────────────────────────────────────\n      await page.screenshot({\n        path: 'test-results/TC-REG-002-duplicate-email-error.png',\n        fullPage: true,\n      });\n    }\n  );\n});\n```\n\n```json\n{\n  \"scenarios\": [\n    {\n      \"id\": \"TC-REG-001\",\n      \"description\": \"Happy Path: New user signup, account creation, and account deletion\",\n      \"testData\": {\n        \"newUser\": {\n          \"name\": \"TestUser\",\n          \"email\": \"testuser_autoexercise_001@mailinator.com\",\n          \"day\": \"15\",\n          \"month\": \"6\",\n          \"year\": \"1990\"\n        },\n        \"accountDetails\": {\n          \"firstName\": \"Test\",\n          \"lastName\": \"User\",\n          \"company\": \"TestCorp\",\n          \"address1\": \"123 Test Street\",\n          \"address2\": \"Suite 100\",\n          \"country\": \"United States\",\n          \"state\": \"California\",\n          \"city\": \"Los Angeles\",\n          \"zipcode\": \"90001\",\n          \"mobile\": \"5551234567\"\n        }\n      }\n    },\n    {\n      \"id\": \"TC-REG-002\",\n      \"description\": \"Negative: Signup attempt with already registered email\",\n      \"testData\": {\n        \"existingUser\": {\n          \"name\": \"ExistingUser\",\n          \"email\": \"existing_registered@mailinator.com\"\n        }\n      }\n    }\n  ],\n  \"constants\": {\n    \"expectedMessages\": {\n      \"newUserSignupHeading\": \"New User Signup!\",\n      \"enterAccountInfoHeading\": \"ENTER ACCOUNT INFORMATION\",\n      \"accountCreated\": \"ACCOUNT CREATED!\",\n      \"accountDeleted\": \"ACCOUNT DELETED!\",\n      \"emailAlreadyExists\": \"Email Address already exist!\"\n    },\n    \"routes\": {\n      \"homeUrl\": \"/\",\n      \"loginUrl\": \"/login\",\n      \"deleteAccountUrl\": \"/delete_account\"\n    }\n  }\n}\n```",
       "operation": "write",
-      "expiresAt": 1777634170226,
+      "expiresAt": 1777646097099,
       "hits": 0
     },
-    "878ecdda05d1d45cff4e578e91a529f6c2ef6a1a35d339003d27079dc6fb8c93": {
+    "52d36bab7c704fcf8dafed927c98c0483670fb0a5adeb2cc2b119d2e93bb649d": {
       "value": {
         "valid": true,
-        "score": 62,
+        "score": 72,
         "issues": [
           {
-            "severity": "error",
-            "message": "TC-REG-002 and TC-REG-003 rely on shared browser state from prior serial tests but use only 'page' fixture — if context resets between tests, state (cookies/session) will be lost and tests will fail",
-            "line": 56
-          },
-          {
-            "severity": "error",
-            "message": "TC-REG-004 calls both homePage.navigate() and loginPage.navigate() — double navigation may override each other and is inconsistent with POM convention",
-            "line": 131
-          },
-          {
-            "severity": "error",
-            "message": "TC-REG-005 and TC-REG-006 call loginPage.navigate() after homePage.navigate() but then interact directly with raw page locators instead of POM methods, violating the POM-only convention",
-            "line": 163
+            "severity": "warning",
+            "message": "Raw page.locator() calls used throughout instead of POM fixture methods, violating POM encapsulation principle",
+            "line": 53
           },
           {
             "severity": "warning",
-            "message": "TC-REG-002 uses raw page locators exclusively instead of POM fixture methods, violating the 'no raw page interactions' convention",
-            "line": 57
+            "message": "loginPage.navigate() used but loginPage is a POM fixture — verify it encapsulates the URL internally and does not require a raw URL argument",
+            "line": 46
           },
           {
             "severity": "warning",
-            "message": "TC-REG-003 uses raw page locators exclusively instead of POM fixture methods",
-            "line": 97
+            "message": "page.locator(\"a[href='/delete_account']\") is a raw locator interaction that should be a POM method",
+            "line": 107
           },
           {
             "severity": "warning",
-            "message": "expect.soft() used with await on textContent() inside expect.soft() — this pattern works but soft assertions on volatile async values can produce misleading failures",
-            "line": 87
+            "message": "Hardcoded file paths for screenshots ('test-results/TC-REG-001-final-state.png') may break in CI environments",
+            "line": 116
           },
           {
             "severity": "warning",
-            "message": "Hardcoded selector strings like \"a[href='/delete_account']\" and \"a[href='/login']\" are effectively hardcoded URLs/paths in test body",
-            "line": 115
-          },
-          {
-            "severity": "warning",
-            "message": "uniqueEmail is defined at describe scope but only used in TC-REG-001; TC-REG-002 and TC-REG-003 implicitly depend on it via shared browser state without referencing it — fragile coupling",
-            "line": 22
-          },
-          {
-            "severity": "warning",
-            "message": "page.screenshot() with hardcoded path 'test-results/TC-REG-005-invalid-email-validation.png' — hardcoded filesystem path in test body",
-            "line": 196
+            "message": "expect.soft(page.url()).toContain(...) is synchronous but page.url() is not awaited — this is correct for page.url() but mixing soft and hard expects inconsistently",
+            "line": 155
           },
           {
             "severity": "suggestion",
-            "message": "TC-REG-002 should use a registrationPage or accountInfoPage POM rather than raw locators",
-            "line": 57
+            "message": "Steps 5 and 6 (filling account details and address) bypass POM — consider adding a fillAccountInfo() method to the registration page object",
+            "line": 54
           },
           {
             "severity": "suggestion",
-            "message": "Serial mode tests should share state via fixtures or storage state, not implicit browser session continuity",
-            "line": 14
+            "message": "test.describe.configure({ mode: 'serial' }) makes the suite fragile; consider making each test independent",
+            "line": 9
           },
           {
             "severity": "suggestion",
-            "message": "loginPage.navigate() is redundant after homePage.navigate() then homePage.goToLogin() — consider a single POM navigation method",
-            "line": 131
+            "message": "Inline type assertions for testData cast (as { newUser: ... }) could be replaced with a typed interface in the data file or a shared types module",
+            "line": 25
           },
           {
             "severity": "suggestion",
-            "message": "Consider extracting duplicate annotation blocks into a helper or use tags via test metadata",
-            "line": 29
+            "message": "TC-REG-002 lacks a homePage.navigate() call before loginPage.navigate() — starting navigation context is implicit",
+            "line": 130
           }
         ],
         "suggestions": [
-          "Create an AccountInfoPage POM to encapsulate TC-REG-002 form interactions",
-          "Use Playwright storageState or a shared fixture to pass session between serial tests explicitly",
-          "Replace loginPage.navigate() calls in negative tests with homePage.navigate() + homePage.goToLogin() for consistency",
-          "Remove hardcoded href selectors and expose them via POM methods",
-          "Use test.info().attachments for screenshots instead of hardcoded paths",
-          "Add a beforeEach hook in Happy Path describe to handle navigation setup shared across serial tests",
-          "Consider splitting serial tests into a single test with multiple steps to avoid implicit state dependency"
+          "Move all locator interactions (form fills, clicks, selects) into dedicated POM methods to fully comply with POM convention",
+          "Add a typed interface for test data JSON to avoid repeated inline type assertions",
+          "Consider using test.step() to wrap logical groups instead of inline comments for better Playwright HTML report readability",
+          "Add explicit waitForURL or waitForNavigation assertions after critical navigation actions (e.g., after create-account click) to avoid race conditions",
+          "Abstract screenshot calls into a utility helper to avoid hardcoded paths and ensure consistent naming across tests"
         ]
       },
       "operation": "validate",
-      "expiresAt": 1777634218260,
+      "expiresAt": 1777646137787,
       "hits": 0
     }
   },
   "stats": {
     "hits": 0,
-    "misses": 3
+    "misses": 8
   }
 }

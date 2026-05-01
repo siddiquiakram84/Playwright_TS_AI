@@ -1,229 +1,159 @@
 import { test } from '../../../core/fixtures';
 import { expect } from '@playwright/test';
-import testData from './user-registration.data.json';
+import testData from './user-registration-flow.data.json';
+import { ENV } from '../../../core/utils/envConfig';
 
-/**
- * User Registration Suite
- * Covers the full new user signup flow on automationexercise.com,
- * including account creation, login verification, and account deletion,
- * plus boundary/negative cases.
- */
+// ─── Happy Path Suite ───────────────────────────────────────────────────────
 
-// ─── Happy Path ────────────────────────────────────────────────────────────────
-test.describe('Happy Path - Complete New User Registration Flow', () => {
+test.describe('User Registration Flow – Happy Path', () => {
   test.describe.configure({ mode: 'serial' });
 
-  const happyPath = testData.scenarios.find((s) => s.id === 'TC-REG-001')!;
-  const accountInfo = testData.scenarios.find((s) => s.id === 'TC-REG-002')!;
-  const verifyDelete = testData.scenarios.find((s) => s.id === 'TC-REG-003')!;
+  test(
+    'TC-REG-001: New user signup, account creation, and account deletion',
+    async ({ page, homePage, loginPage }) => {
+      test.info().annotations.push({ type: 'feature', value: 'Registration' });
+      test.info().annotations.push({ type: 'severity', value: 'critical' });
+      test.info().annotations.push({ type: 'tags', value: 'smoke,regression,auth' });
 
-  // Unique email per run to avoid conflicts with previously registered accounts
-  const uniqueEmail = `testuser_${Date.now()}@autoqa.dev`;
+      const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-001')!;
+      const { newUser, accountDetails } = scenario.testData as {
+        newUser: {
+          name: string;
+          email: string;
+          day: string;
+          month: string;
+          year: string;
+        };
+        accountDetails: {
+          firstName: string;
+          lastName: string;
+          company: string;
+          address1: string;
+          address2: string;
+          country: string;
+          state: string;
+          city: string;
+          zipcode: string;
+          mobile: string;
+        };
+      };
 
-  test('TC-REG-001 | Navigate to home and initiate signup', async ({
-    page,
-    homePage,
-    loginPage,
-  }) => {
-    test.info().annotations.push({ type: 'feature', value: 'Registration' });
-    test.info().annotations.push({ type: 'severity', value: 'critical' });
-    test.info().annotations.push({ type: 'tag', value: 'smoke' });
+      // ── Step 1: Navigate to home page ─────────────────────────────────────
+      await homePage.navigate();
+      await expect(page.locator('#header')).toBeVisible();
 
-    // Step 1: Navigate to home
-    await homePage.navigate();
-    await expect(page.locator('body')).toBeVisible();
+      // ── Step 2: Go to Login / Signup page ─────────────────────────────────
+      await loginPage.navigate();
+      await expect(page.locator('.signup-form h2')).toBeVisible();
+      await expect(page.locator('.signup-form h2')).toHaveText(
+        testData.constants.expectedMessages.newUserSignupHeading
+      );
 
-    // Step 2: Go to Login / Signup page
-    await homePage.goToLogin();
-    await expect(page.locator("h2:has-text('New User Signup!')")).toBeVisible();
+      // ── Step 3: Initiate signup ────────────────────────────────────────────
+      await loginPage.initiateSignup(newUser.name, newUser.email);
 
-    // Step 3: Fill signup form
-    await loginPage.initiateSignup(
-      happyPath.testData.signupName as string,
-      uniqueEmail
-    );
+      // ── Step 4: Verify account information form ────────────────────────────
+      await expect(page.locator('[data-qa="account-info"] h2.title, .login-form h2.title')).toBeVisible();
+      await expect(
+        page.locator('[data-qa="account-info"] h2.title b, .login-form h2.title b')
+      ).toHaveText(testData.constants.expectedMessages.enterAccountInfoHeading);
 
-    // Step 4: Assert navigation to account information page
-    await expect(
-      page.locator("h2.title:has-text('Enter Account Information')")
-    ).toBeVisible();
-  });
+      // ── Step 5: Fill account details ──────────────────────────────────────
+      await page.locator('input#id_gender1').check();
+      await page.locator('[data-qa="password"]').fill(ENV.uiUserPassword);
+      await page.locator('[data-qa="days"]').selectOption(newUser.day);
+      await page.locator('[data-qa="months"]').selectOption(newUser.month);
+      await page.locator('[data-qa="years"]').selectOption(newUser.year);
+      await page.locator('input#newsletter').check();
+      await page.locator('input#optin').check();
 
-  test('TC-REG-002 | Fill account information and create account', async ({
-    page,
-  }) => {
-    test.info().annotations.push({ type: 'feature', value: 'Registration' });
-    test.info().annotations.push({ type: 'severity', value: 'critical' });
-    test.info().annotations.push({ type: 'tag', value: 'smoke' });
+      // ── Step 6: Fill address information ──────────────────────────────────
+      await page.locator('[data-qa="first_name"]').fill(accountDetails.firstName);
+      await page.locator('[data-qa="last_name"]').fill(accountDetails.lastName);
+      await page.locator('[data-qa="company"]').fill(accountDetails.company);
+      await page.locator('[data-qa="address"]').fill(accountDetails.address1);
+      await page.locator('[data-qa="address2"]').fill(accountDetails.address2);
+      await page.locator('[data-qa="country"]').selectOption(accountDetails.country);
+      await page.locator('[data-qa="state"]').fill(accountDetails.state);
+      await page.locator('[data-qa="city"]').fill(accountDetails.city);
+      await page.locator('[data-qa="zipcode"]').fill(accountDetails.zipcode);
+      await page.locator('[data-qa="mobile_number"]').fill(accountDetails.mobile);
 
-    // Select gender
-    await page.locator('input#id_gender1').check();
+      // ── Step 7: Create account ─────────────────────────────────────────────
+      await page.locator('[data-qa="create-account"]').click();
 
-    // Enter password
-    await page.locator('[data-qa="password"]').fill(accountInfo.testData.password as string);
+      // ── Step 8: Verify account created ────────────────────────────────────
+      await expect(page.locator('h2.title b')).toBeVisible();
+      await expect(page.locator('h2.title b')).toHaveText(
+        testData.constants.expectedMessages.accountCreated
+      );
 
-    // Select birth day / month / year
-    await page.locator('[data-qa="days"]').selectOption(accountInfo.testData.birthDay as string);
-    await page.locator('[data-qa="months"]').selectOption(accountInfo.testData.birthMonth as string);
-    await page.locator('[data-qa="years"]').selectOption(accountInfo.testData.birthYear as string);
+      // ── Step 9: Continue to home ──────────────────────────────────────────
+      await page.locator('[data-qa="continue-button"]').click();
 
-    // Opt-in checkboxes
-    await page.locator('input#newsletter').check();
-    await page.locator('input#optin').check();
+      // ── Step 10: Verify logged in ─────────────────────────────────────────
+      await expect(homePage.loggedInUser).toBeVisible();
+      const loggedInUsername = await homePage.getLoggedInUsername();
+      expect(loggedInUsername).toContain(newUser.name);
 
-    // Address information
-    await page.locator('[data-qa="first_name"]').fill(accountInfo.testData.firstName as string);
-    await page.locator('[data-qa="last_name"]').fill(accountInfo.testData.lastName as string);
-    await page.locator('[data-qa="company"]').fill(accountInfo.testData.company as string);
-    await page.locator('[data-qa="address"]').fill(accountInfo.testData.address as string);
-    await page.locator('[data-qa="country"]').selectOption(accountInfo.testData.country as string);
-    await page.locator('[data-qa="state"]').fill(accountInfo.testData.state as string);
-    await page.locator('[data-qa="city"]').fill(accountInfo.testData.city as string);
-    await page.locator('[data-qa="zipcode"]').fill(accountInfo.testData.zipcode as string);
-    await page.locator('[data-qa="mobile_number"]').fill(accountInfo.testData.mobileNumber as string);
+      // ── Step 11: Delete account ───────────────────────────────────────────
+      await page.locator("a[href='/delete_account']").click();
 
-    // Submit
-    await page.locator('[data-qa="create-account"]').click();
+      await expect(page.locator('h2.title b')).toBeVisible();
+      await expect(page.locator('h2.title b')).toHaveText(
+        testData.constants.expectedMessages.accountDeleted
+      );
 
-    // Assert account created heading is visible
-    await expect(page.locator('[data-qa="account-created"]')).toBeVisible();
-    expect.soft(
-      await page.locator('[data-qa="account-created"]').textContent()
-    ).toMatch(/account created/i);
-  });
+      // ── Step 12: Continue after deletion ─────────────────────────────────
+      await page.locator('[data-qa="continue-button"]').click();
 
-  test('TC-REG-003 | Verify logged-in state then delete account', async ({
-    page,
-  }) => {
-    test.info().annotations.push({ type: 'feature', value: 'Registration' });
-    test.info().annotations.push({ type: 'severity', value: 'critical' });
-    test.info().annotations.push({ type: 'tag', value: 'cleanup' });
-
-    // Click Continue after account creation
-    await page.locator('[data-qa="continue-button"]').click();
-
-    // Assert logged-in username in nav
-    const loggedInNav = page.locator("li:has-text('Logged in as')");
-    await expect(loggedInNav).toBeVisible();
-    expect.soft(await loggedInNav.textContent()).toContain(
-      verifyDelete.testData.expectedUsername as string
-    );
-
-    // Delete account
-    await page.locator("a[href='/delete_account']").click();
-    await expect(page.locator('[data-qa="account-deleted"]')).toBeVisible();
-    expect.soft(
-      await page.locator('[data-qa="account-deleted"]').textContent()
-    ).toMatch(/account deleted/i);
-
-    // Continue after deletion — should return to home as logged-out user
-    await page.locator('[data-qa="continue-button"]').click();
-    await expect(
-      page.locator("a[href='/login']:has-text('Signup / Login')")
-    ).toBeVisible();
-  });
+      // ── Step 13: Screenshot final state ──────────────────────────────────
+      await page.screenshot({ path: 'test-results/TC-REG-001-final-state.png', fullPage: true });
+    }
+  );
 });
 
-// ─── Negative: Already Registered Email ───────────────────────────────────────
-test.describe('Negative - Signup with Already Registered Email', () => {
-  const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-004')!;
+// ─── Negative Case Suite ─────────────────────────────────────────────────────
 
-  test('TC-REG-004 | Shows error when registering with an existing email', async ({
-    page,
-    loginPage,
-    homePage,
-  }) => {
-    test.info().annotations.push({ type: 'feature', value: 'Registration' });
-    test.info().annotations.push({ type: 'severity', value: 'high' });
-    test.info().annotations.push({ type: 'tag', value: 'negative' });
+test.describe('User Registration Flow – Negative Cases', () => {
+  test(
+    'TC-REG-002: Signup attempt with already registered email shows error',
+    async ({ page, loginPage }) => {
+      test.info().annotations.push({ type: 'feature', value: 'Registration' });
+      test.info().annotations.push({ type: 'severity', value: 'high' });
+      test.info().annotations.push({ type: 'tags', value: 'regression,auth,negative' });
 
-    await homePage.navigate();
-    await loginPage.navigate();
+      const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-002')!;
+      const { existingUser } = scenario.testData as {
+        existingUser: { name: string; email: string };
+      };
 
-    await expect(page.locator("h2:has-text('New User Signup!')")).toBeVisible();
+      // ── Step 1: Navigate to login/signup page ─────────────────────────────
+      await loginPage.navigate();
 
-    // Use the POM initiateSignup which clicks the signup button internally
-    await loginPage.initiateSignup(
-      scenario.testData.signupName as string,
-      scenario.testData.existingEmail as string
-    );
+      // ── Step 2: Verify signup form is visible ─────────────────────────────
+      await expect(page.locator('.signup-form h2')).toBeVisible();
+      await expect(page.locator('.signup-form h2')).toHaveText(
+        testData.constants.expectedMessages.newUserSignupHeading
+      );
 
-    // Assert duplicate-email error
-    const errorMsg = page.locator("p:has-text('Email Address already exist!')");
-    await expect(errorMsg).toBeVisible();
-    expect.soft(await errorMsg.textContent()).toContain(
-      testData.constants.expectedMessages.duplicateEmailError
-    );
-  });
-});
+      // ── Step 3: Attempt signup with existing email ────────────────────────
+      await loginPage.initiateSignup(existingUser.name, existingUser.email);
 
-// ─── Negative: Invalid Email Format ───────────────────────────────────────────
-test.describe('Negative - Signup with Invalid Email Format', () => {
-  const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-005')!;
+      // ── Step 4: Verify duplicate email error is shown ─────────────────────
+      await expect(page.locator('.signup-form p')).toBeVisible();
+      await expect.soft(page.locator('.signup-form p')).toHaveText(
+        testData.constants.expectedMessages.emailAlreadyExists
+      );
 
-  test('TC-REG-005 | Browser HTML5 validation blocks invalid email format', async ({
-    page,
-    loginPage,
-    homePage,
-  }) => {
-    test.info().annotations.push({ type: 'feature', value: 'Registration' });
-    test.info().annotations.push({ type: 'severity', value: 'medium' });
-    test.info().annotations.push({ type: 'tag', value: 'boundary' });
+      // Confirm user is NOT navigated away from the signup page
+      expect.soft(page.url()).toContain(testData.constants.routes.loginUrl);
 
-    await homePage.navigate();
-    await loginPage.navigate();
-
-    await page.locator('[data-qa="signup-name"]').fill(scenario.testData.signupName as string);
-    await page.locator('[data-qa="signup-email"]').fill(scenario.testData.invalidEmail as string);
-    await page.locator('[data-qa="signup-button"]').click();
-
-    // HTML5 validation: the email input should be in an invalid state
-    const emailInput = page.locator('[data-qa="signup-email"]');
-    const validationMsg = await emailInput.evaluate(
-      (el: HTMLInputElement) => el.validationMessage
-    );
-    expect(validationMsg).not.toBe('');
-
-    // User should NOT have navigated away from the signup page
-    await expect(page.locator("h2:has-text('New User Signup!')")).toBeVisible();
-
-    // Capture screenshot for reporting
-    await page.screenshot({ path: 'test-results/TC-REG-005-invalid-email-validation.png' });
-  });
-});
-
-// ─── Negative: Empty Name Field ────────────────────────────────────────────────
-test.describe('Negative - Signup with Empty Name Field', () => {
-  const scenario = testData.scenarios.find((s) => s.id === 'TC-REG-006')!;
-
-  test('TC-REG-006 | Browser HTML5 validation blocks submission when name is empty', async ({
-    page,
-    loginPage,
-    homePage,
-  }) => {
-    test.info().annotations.push({ type: 'feature', value: 'Registration' });
-    test.info().annotations.push({ type: 'severity', value: 'medium' });
-    test.info().annotations.push({ type: 'tag', value: 'boundary' });
-
-    await homePage.navigate();
-    await loginPage.navigate();
-
-    await expect(page.locator("h2:has-text('New User Signup!')")).toBeVisible();
-
-    // Leave name empty, fill only email
-    await page.locator('[data-qa="signup-email"]').fill(scenario.testData.emailOnly as string);
-    await page.locator('[data-qa="signup-button"]').click();
-
-    // HTML5 validation: name input should be invalid (required)
-    const nameInput = page.locator('[data-qa="signup-name"]');
-    const validationMsg = await nameInput.evaluate(
-      (el: HTMLInputElement) => el.validationMessage
-    );
-    expect(validationMsg).not.toBe('');
-
-    // Confirm user has NOT advanced to account information step
-    await expect(
-      page.locator("h2.title:has-text('Enter Account Information')")
-    ).toBeHidden();
-  });
+      // ── Step 5: Screenshot error state ────────────────────────────────────
+      await page.screenshot({
+        path: 'test-results/TC-REG-002-duplicate-email-error.png',
+        fullPage: true,
+      });
+    }
+  );
 });
